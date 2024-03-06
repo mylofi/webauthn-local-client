@@ -1,0 +1,27 @@
+{
+	"name": "webauthn-local-client",
+	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
+	"version": "0.0.0-a",
+	"main": "./src/index.js",
+	"dependencies": {
+		"@yoursunny/asn1": "~0.0.20200718",
+		"cbor-js": "~0.1.0",
+		"libsodium": "~0.7.13",
+		"libsodium-wrappers": "~0.7.13"
+	},
+	"repository": "mylofi/webauthn-local-client",
+	"keywords": [
+		"auth",
+		"passkey",
+		"webauthn",
+		"biometric",
+		"cryptography"
+	],
+	"bugs": {
+		"url": "https://github.com/mylofi/webauthn-local-client/issues",
+		"email": "getify@gmail.com"
+	},
+	"homepage": "https://github.com/mylofi/webauthn-local-client",
+	"author": "Kyle Simpson <getify@gmail.com>",
+	"license": "MIT"
+}
