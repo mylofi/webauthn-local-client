@@ -11,6 +11,30 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 **Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose.
 
+## Usage
+
+The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) ships with a `dist/` directory with all files you need to deploy.
+
+Make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets, and copy all files (including `dist/external/*` files) as-is into it.
+
+Then import the library in an ESM module in your browser app:
+
+```js
+import WALC from "/path/to/webauthn-local-client/index.js";
+```
+
+// More TBA
+
+## Re-building `dist/*`
+
+If you need to rebuild the `dist/*` files, run:
+
+```cmd
+npm install
+
+npm run build:all
+```
+
 ## License
 
 [![License](https://img.shields.io/badge/license-MIT-a1356a)](LICENSE.txt)

@@ -3,11 +3,19 @@
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
 	"main": "./src/index.js",
+	"scripts": {
+		"build:all": "node scripts/build-all.js",
+		"build": "npm run build:all"
+	},
 	"dependencies": {
 		"@yoursunny/asn1": "~0.0.20200718",
 		"cbor-js": "~0.1.0",
 		"libsodium": "~0.7.13",
 		"libsodium-wrappers": "~0.7.13"
+	},
+	"devDependencies": {
+		"micromatch": "~4.0.5",
+		"recursive-readdir-sync": "~1.0.6"
 	},
 	"repository": "mylofi/webauthn-local-client",
 	"keywords": [
