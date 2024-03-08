@@ -15,7 +15,15 @@
 <script type="module">
 
 import * as WACG from "./js/index.js";
-WACG.todo();
+
+try {
+	var res = await WACG.register();
+
+	console.log(res);
+}
+catch (err) {
+	console.log(err.stack,err.cause);
+}
 
 </script>
 
