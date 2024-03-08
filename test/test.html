@@ -17,9 +17,22 @@
 import * as WACG from "./js/index.js";
 
 try {
-	var res = await WACG.register();
+	var registration = await WACG.register();
 
-	console.log(res);
+	console.log(registration);
+
+	var auth = await WACG.auth(
+		WACG.authDefaults({ mediation: "optional", })
+	);
+
+	console.log(auth);
+
+	var verified = await WACG.verifyAuthResponse(
+		auth.response,
+		registration.response.publicKey
+	);
+
+	console.log(`Auth verified: ${verified}`);
 }
 catch (err) {
 	console.log(err.stack,err.cause);
