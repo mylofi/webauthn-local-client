@@ -1,3 +1,5 @@
 .npmignore
 .gitignore
 node_modules/
+src/external
+test/js

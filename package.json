@@ -5,7 +5,10 @@
 	"main": "./src/index.js",
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
-		"build": "npm run build:all"
+		"build": "npm run build:all",
+		"test:start": "npx http-server test/ -p 8080",
+		"test": "npm run test:start",
+		"postinstall": "node scripts/postinstall.js"
 	},
 	"dependencies": {
 		"@yoursunny/asn1": "~0.0.20200718",
