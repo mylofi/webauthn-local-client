@@ -15,13 +15,15 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) ships with a `dist/` directory with all files you need to deploy.
 
-Make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets, and copy all files (including `dist/external/*` files) as-is into it.
+Make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets, and copy all files from `dist/` (including `dist/external/*` files) as-is into it.
 
 Then import the library in an ESM module in your browser app:
 
 ```js
-import WALC from "/path/to/webauthn-local-client/index.js";
+import { register, auth, } from "/path/to/webauthn-local-client/index.js";
 ```
+
+**Note:** This library exposes its API in modern ESM format, but it relies on dependencies that are non-ESM (UMD), which automatically add themselves to the global namespace; it cannot use `import` to load its own dependencies. Instead, the included `external.js` module manages loading the dependencies via `<script>` element injection into the page. If your development/deployment processes include bundling (webpack, rollup, etc), please configure your tool(s) to skip bundling this library and its dependencies, and just copy them over as indicated above. Alternately, before/during build, you'll need to make sure the `import "./external.js"` line at the top of `index.js` is removed/commented out, to ensure that module is skipped in the bundle.
 
 // More TBA
 

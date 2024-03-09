@@ -1,4 +1,4 @@
-// load external dependencies
+// load external dependencies (comment this line out if using a bundler)
 import "./external.js";
 
 
@@ -24,7 +24,7 @@ export {
 	supportsWebAuthn,
 	supportsConditionalMediation,
 
-	registrationDefaults,
+	regDefaults,
 	register,
 	authDefaults,
 	auth,
@@ -34,7 +34,7 @@ var publicAPI = {
 	supportsWebAuthn,
 	supportsConditionalMediation,
 
-	registrationDefaults,
+	regDefaults,
 	register,
 	authDefaults,
 	auth,
@@ -45,7 +45,7 @@ export default publicAPI;
 
 // ********************************
 
-async function register(regOptions = registrationDefaults()) {
+async function register(regOptions = regDefaults()) {
 	try {
 		if (supportsWebAuthn) {
 			let regResult = await navigator.credentials.create(regOptions);
@@ -124,7 +124,7 @@ async function register(regOptions = registrationDefaults()) {
 	}
 }
 
-function registrationDefaults({
+function regDefaults({
 	credentialType = "publicKey",
 	authenticatorSelection: {
 		authenticatorAttachment = "platform",

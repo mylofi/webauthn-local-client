@@ -72,7 +72,7 @@ async function main() {
 		SRC_DIR,
 		DIST_DIR,
 		mainCopyrightHeader,
-		/*skipPatterns=*/[ "**/*.txt", "**/*.json", ]
+		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
 	);
 
 	// copy external dependencies
