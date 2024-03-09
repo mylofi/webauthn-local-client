@@ -15,8 +15,8 @@ const supportsWebAuthn = (
 // Re: https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable
 // Also: https://web.dev/articles/passkey-form-autofill
 const supportsConditionalMediation = (
-	 typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
-	 (await PublicKeyCredential.isConditionalMediationAvailable())
+	typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
+	(await PublicKeyCredential.isConditionalMediationAvailable())
 );
 
 

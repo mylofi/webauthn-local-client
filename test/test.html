@@ -17,19 +17,19 @@
 import * as WACG from "./js/index.js";
 
 try {
-	var registration = await WACG.register();
+	var regResult = await WACG.register();
 
-	console.log(registration);
+	console.log(regResult);
 
-	var auth = await WACG.auth(
+	var authResult = await WACG.auth(
 		WACG.authDefaults({ mediation: "optional", })
 	);
 
-	console.log(auth);
+	console.log(authResult);
 
 	var verified = await WACG.verifyAuthResponse(
-		auth.response,
-		registration.response.publicKey
+		authResult.response,
+		regResult.response.publicKey
 	);
 
 	console.log(`Auth verified: ${verified}`);
