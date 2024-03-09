@@ -148,6 +148,7 @@ function regDefaults({
 		{ type: "public-key", alg: -7, },		// ECDSA (P-256)
 		{ type: "public-key", alg: -257, },		// RSASSA-PKCS1-v1_5
 	],
+	signal: cancelRegistrationSignal,
 	...otherOptions
 } = {}) {
 	var defaults = {
@@ -176,6 +177,8 @@ function regDefaults({
 			challenge,
 
 			pubKeyCredParams: publicKeyCredentialParams,
+
+			...(cancelRegistrationSignal != null ? { signal: cancelRegistrationSignal, } : null),
 
 			...otherOptions,
 		},
@@ -258,6 +261,8 @@ function authDefaults({
 		// { type: "public-key", id: ..., }
 	],
 	mediation = (supportsConditionalMediation ? "conditional" : "optional"),
+	signal: cancelAuthSignal,
+	...otherOptions
 } = {}) {
 	var defaults = {
 		[credentialType]: {
@@ -267,6 +272,10 @@ function authDefaults({
 			allowCredentials,
 		},
 		mediation,
+
+		...(cancelAuthSignal != null ? { signal: cancelAuthSignal, } : null),
+
+		...otherOptions
 	};
 	// internal meta-data only
 	Object.defineProperty(
