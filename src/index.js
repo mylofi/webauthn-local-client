@@ -303,6 +303,7 @@ async function verifyAuthResponse(
 		let status = await (
 			// Ed25519?
 			(publicKeyAlgoCOSE == -8 && publicKeyAlgoOID == "2b6570") ?
+				// verification needs sodium (not subtle-crypto)
 				verifySignatureSodium(
 					publicKeyRaw,
 					publicKeyAlgoCOSE,
@@ -311,8 +312,14 @@ async function verifyAuthResponse(
 					verificationData
 				) :
 
-			// ECDSA, RSA?
-			[ -7, -257 ].includes(publicKeyAlgoCOSE) ?
+			(
+				// ECDSA (P-256)?
+				(publicKeyAlgoCOSE == -7 && publicKeyAlgoOID == "2a8648ce3d0201") ||
+
+				// RSASSA-PKCS1-v1_5?
+				(publicKeyAlgoCOSE == -257 && publicKeyAlgoOID == "2a864886f70d010101")
+			) ?
+				// verification supported by subtle-crypto
 				verifySignatureSubtle(
 					publicKeySPKI,
 					publicKeyAlgoCOSE,
@@ -336,12 +343,12 @@ async function verifyAuthResponse(
 async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,data) {
     var cipherOptions = {
         ...(
-            algoCOSE == -7 ? {
+            (algoCOSE == -7 && algoOID == "2a8648ce3d0201") ? {
                 name: "ECDSA",
                 namedCurve: "P-256",
                 hash: { name: "SHA-256", },
             } :
-            algoCOSE == -257 ? {
+            (algoCOSE == -257 && algoOID == "2a864886f70d010101") ? {
                 name: "RSASSA-PKCS1-v1_5",
                 hash: { name: "SHA-256", },
             } :
@@ -445,14 +452,15 @@ async function checkRPID(rpIDHash) {
 }
 
 function parseSignature(algoCOSE,algoOID,signature) {
-	if (algoCOSE == -7) {
-		let rStart = signature[4] === 0 ? 5 : 4;
-		let rEnd = rStart + 32;
-		let sStart = signature[rEnd + 2] === 0 ? rEnd + 3 : rEnd + 2;
-		let r = signature.slice(rStart, rEnd);
-		let s = signature.slice(sStart);
-		return new Uint8Array([...r, ...s]);
+	// ECDSA (P-256)?
+	if (algoCOSE == -7 && algoOID == "2a8648ce3d0201") {
+		// this algorithm's signature comes back ASN.1 encoded, per spec:
+		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
+		let der = ASN1.parseVerbose(signature);
+		return new Uint8Array([ ...der.children[0].value, ...der.children[1].value, ]);
 	}
+	// also per spec, other signature algorithms SHOULD NOT come back
+	// in ASN.1, so for those, we just pass through without any parsing
 	return signature;
 }
 
