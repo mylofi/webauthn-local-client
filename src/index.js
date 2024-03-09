@@ -149,7 +149,7 @@ function regDefaults({
 		{ type: "public-key", alg: -257, },		// RSASSA-PKCS1-v1_5
 	],
 	signal: cancelRegistrationSignal,
-	...otherOptions
+	...otherPubKeyOptions
 } = {}) {
 	var defaults = {
 		[credentialType]: {
@@ -178,10 +178,10 @@ function regDefaults({
 
 			pubKeyCredParams: publicKeyCredentialParams,
 
-			...(cancelRegistrationSignal != null ? { signal: cancelRegistrationSignal, } : null),
-
-			...otherOptions,
+			...otherPubKeyOptions,
 		},
+
+		...(cancelRegistrationSignal != null ? { signal: cancelRegistrationSignal, } : null),
 	};
 	// internal meta-data only
 	Object.defineProperty(
