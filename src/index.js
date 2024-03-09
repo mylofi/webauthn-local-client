@@ -4,19 +4,19 @@ import "./external.js";
 
 const credentialTypeKey = Symbol("credential-type");
 const supportsWebAuthn = (
-    navigator.credentials &&
-    typeof navigator.credentials.create != "undefined" &&
-    typeof navigator.credentials.get != "undefined" &&
-    typeof PublicKeyCredential != "undefined" &&
-    typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
-    (await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
+	navigator.credentials &&
+	typeof navigator.credentials.create != "undefined" &&
+	typeof navigator.credentials.get != "undefined" &&
+	typeof PublicKeyCredential != "undefined" &&
+	typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
+	(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
 );
 
 // Re: https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable
 // Also: https://web.dev/articles/passkey-form-autofill
 const supportsConditionalMediation = (
-     typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
-     (await PublicKeyCredential.isConditionalMediationAvailable())
+	 typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
+	 (await PublicKeyCredential.isConditionalMediationAvailable())
 );
 
 
@@ -72,8 +72,8 @@ async function register(regOptions = regDefaults()) {
 
 			let regAuthDataRaw = CBOR.decode(regResult.response.attestationObject).authData;
 			let regAuthData = parseAuthenticatorData(regAuthDataRaw);
-			if (!checkRPID(regAuthData.rpIdHash)) {
-			    throw new Error("Unexpected relying-party ID");
+			if (!checkRPID(regAuthData.rpIdHash,regOptions.relyingPartyID)) {
+				throw new Error("Unexpected relying-party ID");
 			}
 			// sign-count not supported by this authenticator?
 			if (regAuthData.signCount == 0) {
@@ -212,7 +212,7 @@ async function auth(authOptions = authDefaults()) {
 			}
 			let authDataRaw = new Uint8Array(authResult.response.authenticatorData);
 			let authData = parseAuthenticatorData(authDataRaw);
-			if (!checkRPID(authData.rpIdHash)) {
+			if (!checkRPID(authData.rpIdHash,authOptions.relyingPartyID)) {
 				throw new Error("Unexpected relying-party ID");
 			}
 			// sign-count not supported by this authenticator?
@@ -341,53 +341,52 @@ async function verifyAuthResponse(
 }
 
 async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,data) {
-    var cipherOptions = {
-        ...(
-            (algoCOSE == -7 && algoOID == "2a8648ce3d0201") ? {
-                name: "ECDSA",
-                namedCurve: "P-256",
-                hash: { name: "SHA-256", },
-            } :
-            (algoCOSE == -257 && algoOID == "2a864886f70d010101") ? {
-                name: "RSASSA-PKCS1-v1_5",
-                hash: { name: "SHA-256", },
-            } :
+	var cipherOptions = {
+		...(
+			(algoCOSE == -7 && algoOID == "2a8648ce3d0201") ? {
+				name: "ECDSA",
+				namedCurve: "P-256",
+				hash: { name: "SHA-256", },
+			} :
+			(algoCOSE == -257 && algoOID == "2a864886f70d010101") ? {
+				name: "RSASSA-PKCS1-v1_5",
+				hash: { name: "SHA-256", },
+			} :
 
-            // note: Ed25519 (-8) is in draft, but not yet supported
-            // by `importKey(..)`, as of Chrome v122
-            (algoCOSE == -8 && algoOID == "2b6570") ? {
-                name: "ECDSA",
-                namedCurve: "Ed25519",
-                hash: { name: "SHA-512", },
-            } :
+			// note: Ed25519 (-8) is in draft, but not yet supported
+			// by `importKey(..)`, as of Chrome v122
+			(algoCOSE == -8 && algoOID == "2b6570") ? {
+				name: "ECDSA",
+				namedCurve: "Ed25519",
+				hash: { name: "SHA-512", },
+			} :
 
-            // should never use this
-            null
-        ),
-    };
+			// should never use this
+			null
+		),
+	};
 
-    try {
-        let pubKeySubtle = await crypto.subtle.importKey(
-            "spki", // Simple Public Key Infrastructure rfc2692
-            publicKeySPKI,
-            cipherOptions,
-            false, // extractable
-            [ "verify", ]
-        );
+	try {
+		let pubKeySubtle = await crypto.subtle.importKey(
+			"spki", // Simple Public Key Infrastructure rfc2692
+			publicKeySPKI,
+			cipherOptions,
+			false, // extractable
+			[ "verify", ]
+		);
 
-        return await crypto.subtle.verify(cipherOptions,pubKeySubtle,signature,data);
-    }
-    catch (err) {
-        console.log(err);
-        return false;
-    }
+		return await crypto.subtle.verify(cipherOptions,pubKeySubtle,signature,data);
+	}
+	catch (err) {
+		console.log(err);
+		return false;
+	}
 }
 
 function verifySignatureSodium(publicKeyRaw,algoCOSE,algoOID,signature,data) {
 	// Ed25519?
 	if (algoCOSE == -8 && algoOID == "2b6570") {
 		try {
-			// console.log(signature,data,publicKeyRaw);
 			return sodium.crypto_sign_verify_detached(signature,data,publicKeyRaw);
 		}
 		catch (err) {
@@ -401,24 +400,41 @@ function verifySignatureSodium(publicKeyRaw,algoCOSE,algoOID,signature,data) {
 
 // Adapted from: https://www.npmjs.com/package/@yoursunny/webcrypto-ed25519
 function parsePublicKeySPKI(publicKeySPKI) {
-    var der = ASN1.parseVerbose(new Uint8Array(publicKeySPKI));
-    return {
-        algo: sodium.to_hex(der.children[0].children[0].value),
-        raw: der.children[1].value,
-    };
+	var der = ASN1.parseVerbose(new Uint8Array(publicKeySPKI));
+	return {
+		algo: sodium.to_hex(findValue(der.children[0])),
+		raw: findValue(der.children[1]),
+	};
+
+	// **********************
+
+	function findValue(node) {
+		if (node.value && node.value instanceof Uint8Array) {
+			return node.value;
+		}
+		else if (node.children) {
+			for (let child of node.children) {
+				let res = findValue(child);
+				if (res != null) {
+					return res;
+				}
+			}
+		}
+		return null;
+	}
 }
 
 function parseAuthenticatorData(authData) {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Authenticator_data
-	//     32 bytes: rpIdHash
-	//     1 byte: flags
-	//          Bit 0, User Presence (UP)
-	//          Bit 2, User Verification (UV)
-	//          Bit 3, Backup Eligibility (BE)
-	//          Bit 4, Backup State (BS)
-	//          Bit 6, Attested Credential Data (AT)
-	//          Bit 7, Extension Data (ED)
-	//     4 bytes: signCount (0 means disabled)
+	//	 32 bytes: rpIdHash
+	//	 1 byte: flags
+	//		  Bit 0, User Presence (UP)
+	//		  Bit 2, User Verification (UV)
+	//		  Bit 3, Backup Eligibility (BE)
+	//		  Bit 4, Backup State (BS)
+	//		  Bit 6, Attested Credential Data (AT)
+	//		  Bit 7, Extension Data (ED)
+	//	 4 bytes: signCount (0 means disabled)
 
 	return {
 		rpIdHash: authData.slice(0,32),
@@ -430,19 +446,19 @@ function parseAuthenticatorData(authData) {
 }
 
 async function computeVerificationData(authDataRaw,clientDataRaw) {
-    var clientDataHash = await computeSHA256Hash(clientDataRaw);
-    var data = new Uint8Array(
-        authDataRaw.byteLength +
-        clientDataHash.byteLength
-    );
-    data.set(new Uint8Array(authDataRaw),0);
-    data.set(clientDataHash,authDataRaw.byteLength);
-    return data;
+	var clientDataHash = await computeSHA256Hash(clientDataRaw);
+	var data = new Uint8Array(
+		authDataRaw.byteLength +
+		clientDataHash.byteLength
+	);
+	data.set(new Uint8Array(authDataRaw),0);
+	data.set(clientDataHash,authDataRaw.byteLength);
+	return data;
 }
 
-async function checkRPID(rpIDHash) {
+async function checkRPID(rpIDHash,origRPID) {
 	var originHash = await computeSHA256Hash(
-		sodium.from_string(document.location.hostname)
+		sodium.from_string(origRPID)
 	);
 	return (
 		rpIDHash.length > 0 &&
