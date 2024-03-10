@@ -146,6 +146,7 @@ function regDefaults({
 	publicKeyCredentialParams = [
 		{ type: "public-key", alg: -8, },		// Ed25519
 		{ type: "public-key", alg: -7, },		// ECDSA (P-256)
+		{ type: "public-key", alg: -37, },		// RSASSA-PSS
 		{ type: "public-key", alg: -257, },		// RSASSA-PKCS1-v1_5
 	],
 	signal: cancelRegistrationSignal,
@@ -327,7 +328,10 @@ async function verifyAuthResponse(
 				(publicKeyAlgoCOSE == -7 && publicKeyAlgoOID == "2a8648ce3d0201") ||
 
 				// RSASSA-PKCS1-v1_5?
-				(publicKeyAlgoCOSE == -257 && publicKeyAlgoOID == "2a864886f70d010101")
+				(publicKeyAlgoCOSE == -257 && publicKeyAlgoOID == "2a864886f70d010101") ||
+
+				// RSASSA-PSS
+				(publicKeyAlgoCOSE == -37 /*&& publicKeyAlgoOID == ".."*/)
 			) ?
 				// verification supported by subtle-crypto
 				verifySignatureSubtle(
@@ -362,12 +366,18 @@ async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,da
 				name: "RSASSA-PKCS1-v1_5",
 				hash: { name: "SHA-256", },
 			} :
+			(algoCOSE == -37 /*&& algoOID == ".."*/) ? {
+				name: "RSA-PSS",
+				hash: { name: "SHA-256", },
+			} :
 
 			// note: Ed25519 (-8) is in draft, but not yet supported
 			// by `importKey(..)`, as of Chrome v122
+			//    https://wicg.github.io/webcrypto-secure-curves/
+			//    https://www.rfc-editor.org/rfc/rfc8410
+			//    https://caniuse.com/mdn-api_subtlecrypto_importkey_ed25519
 			(algoCOSE == -8 && algoOID == "2b6570") ? {
-				name: "ECDSA",
-				namedCurve: "Ed25519",
+				name: "Ed25519",
 				hash: { name: "SHA-512", },
 			} :
 
