@@ -129,7 +129,7 @@ If `auth()` completes without an exception, then authentication is successful, a
 
 * The `request` property includes all relevant configurations that were applied to the authentication request, and is provided mostly for debugging purposes.
 
-* The `response` property will include the data needed to use (and subsequently identify) the newly registered credential.
+* The `response` property will include the data needed to verify the authentication response.
 
     The most important parts are the `userID` (as passed in the `user.id` configuration to the originating `register()` call), as well as `signature`, which is used (via `verifyAuthResponse(..)`) to verify the signature matches the challenge (and other request info).
 
@@ -157,7 +157,7 @@ If `verifyAuthResponse()` completes without an exception and returns `true`, ver
 If you need to rebuild the `dist/*` files for any reason, run:
 
 ```cmd
-# only the first time
+# only needed one time
 npm install
 
 npm run build:all
@@ -170,6 +170,9 @@ Since the library involves non-automatable behaviors (requiring user interventio
 To start a simple static server (no server-side logic) to run this test, run:
 
 ```cmd
+# only needed one time
+npm install
+
 npm run test:start
 ```
 

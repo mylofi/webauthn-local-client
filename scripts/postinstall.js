@@ -9,5 +9,6 @@ const ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(ROOT_DIR,"src");
 const TEST_DIR = path.join(ROOT_DIR,"test");
 
-fs.symlinkSync(path.join("..","src"),path.join(TEST_DIR,"js"),"dir");
-fs.symlinkSync(path.join("..","dist","external"),path.join(SRC_DIR,"external"),"dir");
+try { fs.symlinkSync(path.join("..","src"),path.join(TEST_DIR,"src"),"dir"); } catch (err) {}
+try { fs.symlinkSync(path.join("..","dist"),path.join(TEST_DIR,"dist"),"dir"); } catch (err) {}
+try { fs.symlinkSync(path.join("..","dist","external"),path.join(SRC_DIR,"external"),"dir"); } catch (err) {}

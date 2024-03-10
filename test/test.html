@@ -12,33 +12,16 @@
 
 <!-------------------------->
 
-<script type="module">
-
-import * as WACG from "./js/index.js";
-
-try {
-	var regResult = await WACG.register();
-
-	console.log(regResult);
-
-	var authResult = await WACG.auth(
-		WACG.authDefaults({ mediation: "optional", })
-	);
-
-	console.log(authResult);
-
-	var verified = await WACG.verifyAuthResponse(
-		authResult.response,
-		regResult.response.publicKey
-	);
-
-	console.log(`Auth verified: ${verified}`);
+<script type="importmap">
+{
+	"imports": {
+		"webauthn-local-client/src": "/src/index.js",
+		"webauthn-local-client/dist": "/dist/index.js"
+	}
 }
-catch (err) {
-	console.log(err.stack,err.cause);
-}
-
 </script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script type="module" src="test.js"></script>
 
 </body>
 </html>
