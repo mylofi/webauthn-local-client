@@ -189,6 +189,18 @@ async function registerNewCredential(name,userIDStr) {
 	}
 	catch (err) {
 		logError(err);
+
+		if (err.cause instanceof Error) {
+			var errorString = err.cause.toString();
+			if (errorString.includes("credentials already registered with the relying party")) {
+				showError(`
+					A credential already exists for this User ID.
+					Please try a different User ID or pick a different authenticator.
+				`);
+				return
+			}
+		} 
+
 		showError("Registering credential failed. Please try again.");
 	}
 }
