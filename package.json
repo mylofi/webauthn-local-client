@@ -5,6 +5,7 @@
 	"main": "./src/index.js",
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
+		"build:gh-pages": "npm run build:all && node scripts/build-gh-pages.js",
 		"build": "npm run build:all",
 		"test:start": "npx http-server test/ -p 8080",
 		"test": "npm run test:start",

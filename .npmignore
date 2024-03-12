@@ -1,6 +1,7 @@
 .npmignore
 .gitignore
 node_modules/
+.gh-build/
 src/external
 test/src
 test/dist

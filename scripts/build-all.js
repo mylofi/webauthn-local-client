@@ -22,7 +22,7 @@ const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
 const DIST_EXTERNAL_DIR = path.join(DIST_DIR,"external");
 
 
-main().catch(console.log);
+main().catch(console.error);
 
 
 // **********************
@@ -37,11 +37,6 @@ async function main() {
 	if (!(await safeMkdir(DIST_EXTERNAL_DIR))) {
 		throw new Error(`Target directory (${DIST_EXTERNAL_DIR}) does not exist and could not be created.`);
 	}
-	try {
-		await fsp.mkdir(DIST_DIR,0o755);
-		await fsp.mkdir(DIST_EXTERNAL_DIR,0o755);
-	}
-	catch (err) {}
 
 	// read package.json
 	var packageJSON = JSON.parse(
@@ -142,7 +137,7 @@ function matchesSkipPattern(pathStr,skipPatterns) {
 async function safeMkdir(pathStr) {
 	if (!fs.existsSync(pathStr)) {
 		try {
-			fsp.mkdir(pathStr,0o755);
+			await fsp.mkdir(pathStr,0o755);
 			return true;
 		}
 		catch (err) {}

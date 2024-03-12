@@ -5,7 +5,7 @@
 
 **WebAuthn-Local-Client** is a web (browser) client for locally managing the ["Web Authentication" (`WebAuthn`) API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API).
 
-The `WebAuthn` API lets users of web applications avoid the long-troubled use of (often insecure) passwords, and instead present personal biometric factors (touch-ID, FaceID, etc) via their device to prove their identity for login/authentication, authorization, etc. Traditionally, this authentication process involves an application interacting with a [FIDO2 Server](https://fidoalliance.org/fido2/) to initiate, verify, and store responses to such `WebAuthn` API interactions.
+The `WebAuthn` API lets users of web applications avoid the long-troubled use of (often insecure) passwords, and instead present personal biometric factors (Touch-ID, Face-ID, etc) via their device to prove their identity for login/authentication, authorization, etc. Traditionally, this authentication process involves an application interacting with a [FIDO2 Server](https://fidoalliance.org/fido2/) to initiate, verify, and store responses to such `WebAuthn` API interactions.
 
 However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-First Web](https://localfirstweb.dev/) applications to handle user login locally on a device, without any server (FIDO2 or otherwise).
 
@@ -235,11 +235,17 @@ npm install
 npm run build:all
 ```
 
-## Test
+## Tests
 
 Since the library involves non-automatable behaviors (requiring user intervention in browser), an automated unit-test suite is not included. Instead, a simple interactive browser test page is provided.
 
-To start a simple static server (no server-side logic) to run this test, run:
+To run the tests, visit `https://mylofi.github.io/webauthn-local-client/`. Follow instructions in-page from there to perform interactive tests.
+
+**Note:** You will either need a device with a built-in authenticator (i.e., Touch-ID, Face-ID, etc), or you can [use Chrome DevTools to setup a virtual authenticator](https://developer.chrome.com/docs/devtools/webauthn), or similar in Safari, or [this Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/). For the virtual authenticator approach, it's recommended you use "ctap2", "internal", "resident keys", "large blob", and "user verification" for the settings. Also, since the tests do not save any generated credentials, you'll likely want to reset the authenticator by removing and re-adding it, before each page load; otherwise, you'll end up with lots of extraneous credentials while testing.
+
+### Run Locally
+
+To locally run the tests, start the simple static server (no server-side logic):
 
 ```cmd
 # only needed one time
@@ -248,9 +254,7 @@ npm install
 npm run test:start
 ```
 
-Then open `http://localhost:8080/test.html` in a browser. Follow instructions in-page from there to perform interactive tests.
-
-**Note:** You will either need a device with a built-in authenticator (i.e., Touch-ID, FaceID, etc), or you can [use Chrome DevTools to setup a virtual authenticator](https://developer.chrome.com/docs/devtools/webauthn). For the virtual authenticator approach, it's recommended you use "ctap2", "internal", "resident keys", "large blob", and "user verification" for the settings. Also, since the test does a new `register()` call each time, you'll likely want to reset the authenticator by removing and re-adding it, before each page reload; otherwise, you'll end up with lots of extraneous credentials while testing.
+Then visit `http://localhost:8080/` in a browser.
 
 ## License
 
