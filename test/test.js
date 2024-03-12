@@ -136,15 +136,6 @@ async function promptRegister() {
 }
 
 async function registerNewCredential(name,userIDStr) {
-	// check if user already has credentials registered
-	let excludeCredentials = [];
-	if (userIDStr in credentialsByID) {
-		excludeCredentials = credentialsByID[userIDStr].map(({ credentialID }) => ({ 
-			type: "public-key", 
-			id: credentialID, 
-		}));
-	}
-
 	var userID = sodium.from_string(userIDStr);
 	var regOptions = regDefaults({
 		user: {
@@ -152,7 +143,10 @@ async function registerNewCredential(name,userIDStr) {
 			displayName: name,
 			id: userID,
 		},
-		excludeCredentials,
+		excludeCredentials: credentialsByID[userIDStr]?.map(({ credentialID }) => ({ 
+			type: "public-key", 
+			id: credentialID, 
+		})) ?? [],
 	});
 	try {
 		let regResult = await register(regOptions);
