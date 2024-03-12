@@ -2,7 +2,79 @@
 import "./external.js";
 
 
+// ********************************
+
+// NOTE: these are ordered by "preference" for key
+// generation by WebAuthn create()
+const publicKeyAlgorithms = [
+	// Ed25519 / EdDSA
+	// https://oid-rep.orange-labs.fr/get/1.3.101.112
+	{
+		name: "Ed25519",
+		COSEID: -8,
+		OID: "2b6570",
+		// note: Ed25519 is in draft, but not yet supported
+		// by subtle-crypto
+		//    https://wicg.github.io/webcrypto-secure-curves/
+		//    https://www.rfc-editor.org/rfc/rfc8410
+		//    https://caniuse.com/mdn-api_subtlecrypto_importkey_ed25519
+		cipherOpts: {
+			name: "Ed25519",
+			hash: { name: "SHA-512", },
+		},
+	},
+
+	// ES256 / ECDSA (P-256)
+	// https://oid-rep.orange-labs.fr/get/1.2.840.10045.2.1
+	{
+		name: "ES256",
+		COSEID: -7,
+		OID: "2a8648ce3d0201",
+		cipherOpts: {
+			name: "ECDSA",
+			namedCurve: "P-256",
+			hash: { name: "SHA-256", },
+		},
+	},
+
+	// RSASSA-PSS
+	// https://oid-rep.orange-labs.fr/get/1.2.840.113549.1.1.10
+	{
+		name: "RSASSA-PSS",
+		COSEID: -37,
+		OID: "2a864886f70d01010a",
+		cipherOpts: {
+			name: "RSA-PSS",
+			hash: { name: "SHA-256", },
+		},
+	},
+
+	// RS256 / RSASSA-PKCS1-v1_5
+	// https://oid-rep.orange-labs.fr/get/1.2.840.113549.1.1.1
+	{
+		name: "RS256",
+		COSEID: -257,
+		OID: "2a864886f70d010101",
+		cipherOpts: {
+			name: "RSASSA-PKCS1-v1_5",
+			hash: { name: "SHA-256", },
+		},
+	},
+];
+const publicKeyAlgorithmsLookup = Object.fromEntries(
+	publicKeyAlgorithms.flatMap(entry => [
+		// by name
+		[ entry.name, entry, ],
+
+		// by COSEID
+		[ entry.COSEID, entry, ],
+
+		// by OID
+		[ entry.OID, entry, ],
+	])
+);
 const credentialTypeKey = Symbol("credential-type");
+const resetAbortReason = Symbol("reset-abort");
 const supportsWebAuthn = (
 	navigator.credentials &&
 	typeof navigator.credentials.create != "undefined" &&
@@ -20,7 +92,10 @@ const supportsConditionalMediation = (
 );
 
 
+// ********************************
+
 export {
+	resetAbortReason,
 	supportsWebAuthn,
 	supportsConditionalMediation,
 
@@ -29,6 +104,8 @@ export {
 	authDefaults,
 	auth,
 	verifyAuthResponse,
+	packPublicKeyJSON,
+	unpackPublicKeyJSON,
 };
 var publicAPI = {
 	supportsWebAuthn,
@@ -39,6 +116,8 @@ var publicAPI = {
 	authDefaults,
 	auth,
 	verifyAuthResponse,
+	packPublicKeyJSON,
+	unpackPublicKeyJSON,
 };
 export default publicAPI;
 
@@ -64,13 +143,18 @@ async function register(regOptions = regDefaults()) {
 			}
 
 			let publicKeyAlgoCOSE = regResult.response.getPublicKeyAlgorithm();
-			let publicKeySPKI = regResult.response.getPublicKey();
+			let publicKeySPKI = new Uint8Array(regResult.response.getPublicKey());
 			let {
 				algo: publicKeyAlgoOID,
 				raw: publicKeyRaw,
 			} = parsePublicKeySPKI(publicKeySPKI);
 
-			let regAuthDataRaw = CBOR.decode(regResult.response.attestationObject).authData;
+			let regAuthDataRaw = (
+				typeof regResult.response.getAuthenticatorData != "undefined" ?
+					(new Uint8Array(regResult.response.getAuthenticatorData())) :
+
+					CBOR.decode(regResult.response.attestationObject).authData
+			);
 			let regAuthData = parseAuthenticatorData(regAuthDataRaw);
 			if (!checkRPID(regAuthData.rpIdHash,regOptions.relyingPartyID)) {
 				throw new Error("Unexpected relying-party ID");
@@ -120,7 +204,9 @@ async function register(regOptions = regDefaults()) {
 		throw new Error("WebAuthentication not supported on this device");
 	}
 	catch (err) {
-		throw new Error("Credential registration failed",{ cause: err, });
+		if (err != resetAbortReason) {
+			throw new Error("Credential registration failed",{ cause: err, });
+		}
 	}
 }
 
@@ -143,12 +229,12 @@ function regDefaults({
 		displayName: userDisplayName = userName,
 		id: userID = sodium.randombytes_buf(5),
 	} = {},
-	publicKeyCredentialParams = [
-		{ type: "public-key", alg: -8, },		// Ed25519
-		{ type: "public-key", alg: -7, },		// ECDSA (P-256)
-		{ type: "public-key", alg: -37, },		// RSASSA-PSS
-		{ type: "public-key", alg: -257, },		// RSASSA-PKCS1-v1_5
-	],
+	publicKeyCredentialParams = (
+		publicKeyAlgorithms.map(entry => ({
+			type: "public-key",
+			alg: entry.COSEID,
+		}))
+	),
 	signal: cancelRegistrationSignal,
 	...otherPubKeyOptions
 } = {}) {
@@ -201,6 +287,20 @@ function regDefaults({
 async function auth(authOptions = authDefaults()) {
 	try {
 		if (supportsWebAuthn) {
+			// ensure credential IDs are binary (not base64 string)
+			if (Array.isArray(authOptions[authOptions[credentialTypeKey]].allowCredentials)) {
+				authOptions[authOptions[credentialTypeKey]].allowCredentials = (
+					authOptions[authOptions[credentialTypeKey]].allowCredentials.map(entry => ({
+						...entry,
+						id: (
+							typeof entry.id == "string" ?
+								sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
+								entry.id
+						),
+					}))
+				);
+			}
+
 			let authResult = await navigator.credentials.get(authOptions);
 			let authClientDataRaw = new Uint8Array(authResult.response.clientDataJSON);
 			let authClientData = JSON.parse(sodium.to_string(authClientDataRaw));
@@ -236,6 +336,10 @@ async function auth(authOptions = authDefaults()) {
 					)),
 				},
 				response: {
+					credentialID: sodium.to_base64(
+						new Uint8Array(authResult.rawId),
+						sodium.base64_variants.ORIGINAL
+					),
 					signature: signatureRaw,
 					...(Object.fromEntries(
 						Object.entries(authData).filter(([ key, val ]) => (
@@ -250,7 +354,9 @@ async function auth(authOptions = authDefaults()) {
 		throw new Error("WebAuthentication not supported on this device");
 	}
 	catch (err) {
-		throw new Error("Credential auth failed",{ cause: err, });
+		if (err != resetAbortReason) {
+			throw new Error("Credential auth failed",{ cause: err, });
+		}
 	}
 }
 
@@ -262,7 +368,7 @@ function authDefaults({
 	allowCredentials = [
 		// { type: "public-key", id: ..., }
 	],
-	mediation = (supportsConditionalMediation ? "conditional" : "optional"),
+	mediation = "optional",
 	signal: cancelAuthSignal,
 	...otherOptions
 } = {}) {
@@ -274,9 +380,7 @@ function authDefaults({
 			allowCredentials,
 		},
 		mediation,
-
 		...(cancelAuthSignal != null ? { signal: cancelAuthSignal, } : null),
-
 		...otherOptions
 	};
 	// internal meta-data only
@@ -309,45 +413,55 @@ async function verifyAuthResponse(
 	} = {}
 ) {
 	try {
-		let verificationSig = parseSignature(publicKeyAlgoCOSE,publicKeyAlgoOID,signature);
-		let verificationData = await computeVerificationData(authDataRaw,clientDataRaw);
-		let status = await (
-			// Ed25519?
-			(publicKeyAlgoCOSE == -8 && publicKeyAlgoOID == "2b6570") ?
-				// verification needs sodium (not subtle-crypto)
-				verifySignatureSodium(
-					publicKeyRaw,
-					publicKeyAlgoCOSE,
-					publicKeyAlgoOID,
-					verificationSig,
-					verificationData
-				) :
+		// all necessary inputs?
+		if (
+			signature && clientDataRaw && authDataRaw && publicKeySPKI && publicKeyRaw &&
+			Number.isInteger(publicKeyAlgoCOSE) &&
+			typeof publicKeyAlgoOID == "string"
+		) {
+			let verificationSig = parseSignature(publicKeyAlgoCOSE,publicKeyAlgoOID,signature);
+			let verificationData = await computeVerificationData(authDataRaw,clientDataRaw);
+			let status = await (
+				// Ed25519?
+				isPublicKeyAlgorithm("Ed25519",publicKeyAlgoCOSE,publicKeyAlgoOID) ?
+					// verification needs sodium (not subtle-crypto)
+					verifySignatureSodium(
+						publicKeyRaw,
+						publicKeyAlgoCOSE,
+						publicKeyAlgoOID,
+						verificationSig,
+						verificationData
+					) :
 
-			(
-				// ECDSA (P-256)?
-				(publicKeyAlgoCOSE == -7 && publicKeyAlgoOID == "2a8648ce3d0201") ||
+				(
+					// ECDSA (P-256)?
+					isPublicKeyAlgorithm("ES256",publicKeyAlgoCOSE,publicKeyAlgoOID) ||
 
-				// RSASSA-PKCS1-v1_5?
-				(publicKeyAlgoCOSE == -257 && publicKeyAlgoOID == "2a864886f70d010101") ||
+					// RSASSA-PKCS1-v1_5?
+					isPublicKeyAlgorithm("RS256",publicKeyAlgoCOSE,publicKeyAlgoOID) ||
 
-				// RSASSA-PSS
-				(publicKeyAlgoCOSE == -37 /*&& publicKeyAlgoOID == ".."*/)
-			) ?
-				// verification supported by subtle-crypto
-				verifySignatureSubtle(
-					publicKeySPKI,
-					publicKeyAlgoCOSE,
-					publicKeyAlgoOID,
-					verificationSig,
-					verificationData
-				) :
+					// RSASSA-PSS
+					isPublicKeyAlgorithm("RSASSA-PSS",publicKeyAlgoCOSE,publicKeyAlgoOID)
+				) ?
+					// verification supported by subtle-crypto
+					verifySignatureSubtle(
+						publicKeySPKI,
+						publicKeyAlgoCOSE,
+						publicKeyAlgoOID,
+						verificationSig,
+						verificationData
+					) :
 
-				null
-		);
-		if (status == null) {
-			throw new Error("Unrecognized signature, failed validation");
+					null
+			);
+			if (status == null) {
+				throw new Error("Unrecognized signature, failed validation");
+			}
+			return status;
 		}
-		return status;
+		else {
+			throw new Error("Auth verification missing required inputs");
+		}
 	}
 	catch (err) {
 		throw new Error("Auth verification failed",{ cause: err, });
@@ -355,57 +469,32 @@ async function verifyAuthResponse(
 }
 
 async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,data) {
-	var cipherOptions = {
-		...(
-			(algoCOSE == -7 && algoOID == "2a8648ce3d0201") ? {
-				name: "ECDSA",
-				namedCurve: "P-256",
-				hash: { name: "SHA-256", },
-			} :
-			(algoCOSE == -257 && algoOID == "2a864886f70d010101") ? {
-				name: "RSASSA-PKCS1-v1_5",
-				hash: { name: "SHA-256", },
-			} :
-			(algoCOSE == -37 /*&& algoOID == ".."*/) ? {
-				name: "RSA-PSS",
-				hash: { name: "SHA-256", },
-			} :
+	if (
+		isPublicKeyAlgorithm("ES256",algoCOSE,algoOID) ||
+		isPublicKeyAlgorithm("RSASSA-PSS",algoCOSE,algoOID) ||
+		isPublicKeyAlgorithm("RS256",algoCOSE,algoOID)
+	) {
+		try {
+			let pubKeySubtle = await crypto.subtle.importKey(
+				"spki", // Simple Public Key Infrastructure rfc2692
+				publicKeySPKI,
+				publicKeyAlgorithmsLookup[algoCOSE].cipherOpts,
+				false, // extractable
+				[ "verify", ]
+			);
 
-			// note: Ed25519 (-8) is in draft, but not yet supported
-			// by `importKey(..)`, as of Chrome v122
-			//    https://wicg.github.io/webcrypto-secure-curves/
-			//    https://www.rfc-editor.org/rfc/rfc8410
-			//    https://caniuse.com/mdn-api_subtlecrypto_importkey_ed25519
-			(algoCOSE == -8 && algoOID == "2b6570") ? {
-				name: "Ed25519",
-				hash: { name: "SHA-512", },
-			} :
-
-			// should never use this
-			null
-		),
-	};
-
-	try {
-		let pubKeySubtle = await crypto.subtle.importKey(
-			"spki", // Simple Public Key Infrastructure rfc2692
-			publicKeySPKI,
-			cipherOptions,
-			false, // extractable
-			[ "verify", ]
-		);
-
-		return await crypto.subtle.verify(cipherOptions,pubKeySubtle,signature,data);
+			return await crypto.subtle.verify(cipherOptions,pubKeySubtle,signature,data);
+		}
+		catch (err) {
+			console.log(err);
+			return false;
+		}
 	}
-	catch (err) {
-		console.log(err);
-		return false;
-	}
+	throw new Error("Unrecognized signature for subtle-crypto verification");
 }
 
 function verifySignatureSodium(publicKeyRaw,algoCOSE,algoOID,signature,data) {
-	// Ed25519?
-	if (algoCOSE == -8 && algoOID == "2b6570") {
+	if (isPublicKeyAlgorithm("Ed25519",algoCOSE,algoOID)) {
 		try {
 			return sodium.crypto_sign_verify_detached(signature,data,publicKeyRaw);
 		}
@@ -414,7 +503,6 @@ function verifySignatureSodium(publicKeyRaw,algoCOSE,algoOID,signature,data) {
 			return false;
 		}
 	}
-
 	throw new Error("Unrecognized signature for sodium verification");
 }
 
@@ -488,8 +576,7 @@ async function checkRPID(rpIDHash,origRPID) {
 }
 
 function parseSignature(algoCOSE,algoOID,signature) {
-	// ECDSA (P-256)?
-	if (algoCOSE == -7 && algoOID == "2a8648ce3d0201") {
+	if (isPublicKeyAlgorithm("ES256",algoCOSE,algoOID)) {
 		// this algorithm's signature comes back ASN.1 encoded, per spec:
 		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
 		let der = ASN1.parseVerbose(signature);
@@ -518,4 +605,47 @@ async function computeSHA256Hash(val) {
 			new Uint8Array(val)
 		)
 	);
+}
+
+function isPublicKeyAlgorithm(algoName,COSEID,OID) {
+	return (
+		publicKeyAlgorithmsLookup[algoName] == publicKeyAlgorithmsLookup[COSEID] &&
+		publicKeyAlgorithmsLookup[COSEID] == publicKeyAlgorithmsLookup[OID]
+	);
+}
+
+function packPublicKeyJSON(publicKeyEntry,stringify = false) {
+	publicKeyEntry = {
+		...publicKeyEntry,
+		spki: (
+			typeof publicKeyEntry.spki != "string" ?
+				sodium.to_base64(publicKeyEntry.spki,sodium.base64_variants.ORIGINAL) :
+				publicKeyEntry.spki
+		),
+		raw: (
+			typeof publicKeyEntry.raw != "string" ?
+				sodium.to_base64(publicKeyEntry.raw,sodium.base64_variants.ORIGINAL) :
+				publicKeyEntry.raw
+		),
+	};
+	return (stringify ? JSON.stringify(publicKeyEntry) : publicKeyEntry);
+}
+
+function unpackPublicKeyJSON(publicKeyEntryJSON) {
+	var publicKeyEntry = (
+		typeof publicKeyEntryJSON == "string" ? JSON.parse(publicKeyEntryJSON) : publicKeyEntryJSON
+	);
+	return {
+		...publicKeyEntry,
+		spki: (
+			typeof publicKeyEntry.spki == "string" ?
+				sodium.from_base64(publicKeyEntry.spki,sodium.base64_variants.ORIGINAL) :
+				publicKeyEntry.spki
+		),
+		raw: (
+			typeof publicKeyEntry.raw == "string" ?
+				sodium.from_base64(publicKeyEntry.raw,sodium.base64_variants.ORIGINAL) :
+				publicKeyEntry.raw
+		),
+	};
 }

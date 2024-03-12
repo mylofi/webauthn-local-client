@@ -9,7 +9,7 @@ The `WebAuthn` API lets users of web applications avoid the long-troubled use of
 
 However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-First Web](https://localfirstweb.dev/) applications to handle user login locally on a device, without any server (FIDO2 or otherwise).
 
-**Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose.
+**Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn) or [this one](https://github.com/raohwork/webauthn-client).
 
 ## Usage
 
@@ -20,7 +20,7 @@ Make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets
 Then import the library in an ESM module in your browser app:
 
 ```js
-import { register, auth } from "/path/to/webauthn-local-client/index.js"
+import { register, auth } from "/path/to/webauthn-local-client/index.js";
 ```
 
 **Note:** This library exposes its API in modern ESM format, but it relies on dependencies that are non-ESM (UMD), which automatically add themselves to the global namespace; it cannot use `import` to load its own dependencies. Instead, the included `external.js` module manages loading the dependencies via `<script>` element injection into the page. If your development/deployment processes include bundling (webpack, rollup, etc), please configure your tool(s) to skip bundling this library and its dependencies, and just copy them over as indicated above. Alternately, before/during build, you'll need to make sure the `import "./external.js"` line at the top of `index.js` is removed/commented out, to ensure that module is skipped in the bundle.
@@ -42,7 +42,41 @@ If your app uses an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HT
 Then you can `import` it in a more friendly/readable way:
 
 ```js
-import { register, auth } from "webauthn-local-client"
+import { register, auth } from "webauthn-local-client";
+```
+
+### Supported?
+
+To check if `WebAuthn` is supported on the device:
+
+```js
+import { supportsWebAuthn } from "webauthn-local-client";
+
+if (supportsWebAuthn) {
+    // welcome to the future, without passwords!
+}
+else {
+    // sigh, use fallback authentication, like
+    // icky passwords :(
+}
+```
+
+To check if [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill) is supported on the device:
+
+```js
+import { supportsConditionalMediation } from "webauthn-local-client";
+
+if (supportsConditionalMediation) {
+    // provide an <input> and UX for user to
+    // click on, to select their passkey
+    // credential via autofill
+}
+else {
+    // provide UX for user to trigger
+    // authentication, where the browser will
+    // provide a modal for the user to select
+    // their credential
+}
 ```
 
 ### Registering a new credential
@@ -90,7 +124,9 @@ If `register()` completes without an exception, then registration is successful,
 
     The most important parts are `credentialID` (base64 padded encoding string) and `publicKey`, with various pieces of information about the keypair ([COSE ID](https://www.iana.org/assignments/cose/cose.xhtml#algorithms) for the algorithm, the OID of the algorithm in hex-string format, and the `spki` and `raw` representations of the public-key) generated for the credential; this info is used for verifying the signature on subsequent `auth()` requests.
 
-    **Note:** This library by default does not ask for any attestation information -- for verifying the authenticity of the device's authenticator, via certificate chains -- nor does it perform any such verification. Such verification is quite a complex process, best suited for a [FIDO2 Server](https://fidoalliance.org/fido2/), so it's out of scope for this library's intended local-in-browser-only operation. You can however override the configuration to `register(..)` to ask for attestation information, and pass that along (from `response.raw`) to a separate verification process (on server, or in browser) as desired. Typically, though, web applications *assume* that if a device is compromised in such a way that it's able to bypass/MITM a device authenticator, the app is *not* the appropriate or responsible party to detect or alert an end-user to such.
+    The `publicKey` object includes byte-arrays ([`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)), which are not as conveniently serialized to/from JSON. Two helper methods are provided to make this easy: `packPublicKeyJSON()` (to store/transmit) and `unpackPublicKeyJSON()` (to restore).
+
+    **Note:** This library by default does not ask for any attestation information -- for verifying the authenticity of the device's authenticator, via certificate chains -- nor does it perform any such verification. Such verification is quite a complex process, best suited for a [FIDO2 Server](https://fidoalliance.org/fido2/), so it's out of scope for this library's intended local-in-browser-only operation. You can however override the configuration to `register(..)` to ask for attestation information, and pass that along (from `response.raw`) to a separate verification process (on server, or in browser) as desired. Typically, though, [web applications *assume*](https://medium.com/webauthnworks/webauthn-fido2-demystifying-attestation-and-mds-efc3b3cb3651) that if a device is compromised in such a way that it's able to bypass/MITM a device authenticator, the app is *not* the appropriate or responsible party to detect or alert an end-user to such.
 
 ### Authenticating with an existing credential
 
@@ -113,13 +149,36 @@ To configure the authentication options, but include all the defaults for anythi
 
 Typical `auth()` configuration options:
 
-* `mediation` (string): Defaults to `"optional"`, but can also be set to `"conditional"` to trigger [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill), if the browser/device supports it.
+* `allowCredentials` (array): Defaults to an empty array, which allows the user to select any [available discoverable credential](https://web.dev/articles/webauthn-discoverable-credentials) (aka, "resident key").
+
+    **Note:** If you use the "discoverable credential" approach, and don't preserve the `credentialID` and `publicKey` from an initial `register()` call, you won't be able to verify any authorization responses (`verifyAuthResponse()`), since that requires the public key (only returned from `register()`).
+
+    If you pass a non-empty array (object values, e.g. `{ type: "public-key", id: ... }`), the browser will present a narrowed list of credentials for the user to select from.
+
+* `mediation` (string): Defaults to `"optional"`, but can also be set to `"conditional"` to trigger [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill), if the browser/device supports it (see `supportsConditionalMediation`).
 
     **Note:** If conditional-mediation is supported and `mediation: "conditional"` is specified, the promise result of `auth()` will remain pending until the user clicks into a suitable `<input autocomplete="username webauthn">` element in the page, and then selects their credential from the autofill prompt. Make sure you provide the user such a form element and suitable UX/flow to explain to them what to do. Also, such a request should likely be specified as cancelable (via `signal`) in case the user does not want to use autofill.
 
-* `challenge` (Uint8Array): Defaults to 20 bytes of generated randomness, but can be provided manually if you have another source of suitable information to use for a challenge. The returned result will include a signature (`response.signature`) that was generated against this challenge (along with other request info), helping to strengthen the security of the system.
+* `challenge` (Uint8Array): Defaults to 20 bytes of generated randomness, but can be provided manually if you have another source of suitable information to use for a challenge. The returned result will include a signature (`response.signature`) that was generated against this challenge (along with other request info), helping to strengthen the security of the system (i.e., preventing "replay attacks").
 
-* `signal` (AbortSignal): an [`AbortController.signal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/signal) instance to cancel the authentication request
+* `signal` (AbortSignal): an [`AbortController.signal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/signal) instance to cancel the authentication request.
+
+    For certain UX flows, such as switching from the conditional-mediation to another authentication approach, you will need to cancel (via `signal`) a previous call to `auth()` before invoking an `auth()` call with different options. But calling `abort()` causes that pending `auth()` to throw an exception. To suppress this exception when resetting, pass the `resetAbortReason` value:
+
+    ```js
+    import { resetAbortReason, authDefaults, auth } from "..";
+
+    var cancelToken = new AbortController();
+    var authResult = await auth({ /* .. */ , signal: cancelToken.signal });
+
+    // elsewhere:
+    cancelToken.abort(resetAbortReason);
+
+    cancelToken = new AbortController();
+    var newAuthResult = await auth({ /* .. */ , signal: cancelToken.signal });
+
+    // ..
+    ```
 
 See `authDefaults()` function signature for more options.
 
@@ -129,9 +188,9 @@ If `auth()` completes without an exception, then authentication is successful, a
 
 * The `request` property includes all relevant configurations that were applied to the authentication request, and is provided mostly for debugging purposes.
 
-* The `response` property will include the data needed to verify the authentication response.
+* The `response` property will include information about the credential used, as well as a signature to verify the authentication response.
 
-    The most important parts are the `userID` (as passed in the `user.id` configuration to the originating `register()` call), as well as `signature`, which is used (via `verifyAuthResponse(..)`) to verify the signature matches the challenge (and other request info).
+    The most important parts of `response` are the `userID` (as passed in the `user.id` configuration to the originating `register()` call), as well as `signature`, which is used (via `verifyAuthResponse(..)`, along with the public key from the original `register()` call for that credential) to verify the signature against the `request.challenge` (and other request settings).
 
 ### Verifying an authentication response
 
@@ -148,7 +207,20 @@ var verified = await verifyAuthResponse(
 );
 ```
 
-**Note:** You will likely store the contents of `regResult.response.publicKey` (such as in `LocalStorage`), and later restore that to pass in on subsequent authentication attempts; registration and authentication will not typically happen in the same page instance (where `regResult` would still be present).
+**Note:** You will likely have preserved the `regResult.response.credentialID` and `regResult.response.publicKey` from the original `register()` call for a credential -- either locally in e.g. `LocalStorage` or remotely on a server -- and later restore that to pass in on subsequent authentication attempts; registration and authentication will not typically happen in the same page instance (where `regResult` would still be present).
+
+If you used `packPublicKeyJSON()` on the original `publicKey` value to store/transmit it, you'll need to use `unpackPublicKeyJSON()` before passing it to `verifyAuthResponse()`:
+
+```js
+import { verifyAuthResponse, unpackPublicKeyJSON } from "..";
+
+var packedPublicKey = ... // result from previous packPublicKeyJSON()
+
+var verified = await verifyAuthResponse(
+    authResult.response,
+    unpackPublicKeyJSON(packedPublicKey)
+);
+```
 
 If `verifyAuthResponse()` completes without an exception and returns `true`, verification was successful. Otherwise, `false` indicates everything was well-formed, but the signature verification failed for some other reason. An exception indicates something was malformed/unexpected.
 

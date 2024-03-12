@@ -2,12 +2,34 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
-<title>WebAuthn Local Client Test</title>
+<title>WebAuthn Local Client: Tests</title>
+<style>
+.modal-btn { display: inline-block; color: white; background-color: black; border: 0; border-radius: 0.25em; font-size: 1em; }
+.toast-popup .swal2-html-container { white-space: nowrap; }
+</style>
 </head>
 <body>
 
 <main>
-<h1>Coming soon.</h1>
+<h1>WebAuthn Local Client: Tests</h1>
+
+<p>
+	Before running these tests, make sure you're on a device that supports <a href="https://webauthn.io/" target="_blank">Web Authentication</a>, or alternatively use browser DevTools to <a href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank">setup a virtual authenticator in Chrome</a>, or similar in Safari, or <a href="https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/" target="_blank">this Firefox add-on</a>.
+</p>
+<p>
+	<strong>NOTE:</strong> This test does not store anything (LocalStorage, etc), so on each page load, you should reset the authenticator by removing any credentials created previously by this test suite.
+</p>
+<p>
+	<button type="button" id="register-btn">register new credential</button>
+</p>
+<p>
+	<button type="button" id="auth-btn">authenticate</button>
+</p>
+
+<hr>
+
+<ul id="registered-credentials"></ul>
+
 </main>
 
 <!-------------------------->
