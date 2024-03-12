@@ -13,8 +13,7 @@ const PKG_ROOT_DIR = path.join(__dirname,"..");
 const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
 const TEST_DIR = path.join(PKG_ROOT_DIR,"test");
 const BUILD_DIR = path.join(PKG_ROOT_DIR,".gh-build");
-const BUILD_WALC_DIR = path.join(BUILD_DIR,"webauthn-local-client");
-const BUILD_WALC_DIST_DIR = path.join(BUILD_WALC_DIR,"dist");
+const BUILD_DIST_DIR = path.join(BUILD_DIR,"dist");
 
 
 main().catch(console.error);
@@ -29,32 +28,29 @@ async function main() {
 	if (!(await safeMkdir(BUILD_DIR))) {
 		throw new Error(`Target directory (${BUILD_DIR}) does not exist and could not be created.`);
 	}
-	if (!(await safeMkdir(BUILD_WALC_DIR))) {
-		throw new Error(`Target directory (${BUILD_WALC_DIR}) does not exist and could not be created.`);
-	}
-	if (!(await safeMkdir(BUILD_WALC_DIST_DIR))) {
-		throw new Error(`Target directory (${BUILD_WALC_DIST_DIR}) does not exist and could not be created.`);
+	if (!(await safeMkdir(BUILD_DIST_DIR))) {
+		throw new Error(`Target directory (${BUILD_DIST_DIR}) does not exist and could not be created.`);
 	}
 
 	// copy test/* files
 	await copyFilesTo(
 		recursiveReadDir(TEST_DIR),
 		TEST_DIR,
-		BUILD_WALC_DIR,
+		BUILD_DIR,
 		/*skipPatterns=*/[ "**/src", "**/dist", ]
 	);
 
 	// patch import reference in test.js to point to dist/
-	var testJSPath = path.join(BUILD_WALC_DIR,"test.js");
+	var testJSPath = path.join(BUILD_DIR,"test.js");
 	var testJSContents = await fsp.readFile(testJSPath,{ encoding: "utf8", });
-	testJSContents = testJSContents.replace(/(from "webauthn-local-client\/)src"/,"$1dist");
+	testJSContents = testJSContents.replace(/(from "webauthn-local-client\/)src"/,"$1dist\"");
 	await fsp.writeFile(testJSPath,testJSContents,{ encoding: "utf8", });
 
 	// copy dist/* files
 	await copyFilesTo(
 		recursiveReadDir(DIST_DIR),
 		DIST_DIR,
-		BUILD_WALC_DIST_DIR
+		BUILD_DIST_DIR
 	);
 
 	console.log("Complete.");
