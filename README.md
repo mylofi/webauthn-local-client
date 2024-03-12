@@ -239,7 +239,7 @@ npm run build:all
 
 Since the library involves non-automatable behaviors (requiring user intervention in browser), an automated unit-test suite is not included. Instead, a simple interactive browser test page is provided.
 
-To run the tests, visit `https://mylofi.github.io/webauthn-local-client/`. Follow instructions in-page from there to perform interactive tests.
+Visit [`https://mylofi.github.io/webauthn-local-client/`](https://mylofi.github.io/webauthn-local-client/), and follow instructions in-page from there to perform the interactive tests.
 
 **Note:** You will either need a device with a built-in authenticator (i.e., Touch-ID, Face-ID, etc), or you can [use Chrome DevTools to setup a virtual authenticator](https://developer.chrome.com/docs/devtools/webauthn), or similar in Safari, or [this Firefox add-on](https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/). For the virtual authenticator approach, it's recommended you use "ctap2", "internal", "resident keys", "large blob", and "user verification" for the settings. Also, since the tests do not save any generated credentials, you'll likely want to reset the authenticator by removing and re-adding it, before each page load; otherwise, you'll end up with lots of extraneous credentials while testing.
 
