@@ -139,13 +139,10 @@ async function registerNewCredential(name,userIDStr) {
 	// check if user already has credentials registered
 	let excludeCredentials = [];
 	if (userIDStr in credentialsByID) {
-		excludeCredentials = [{
+		excludeCredentials = credentialsByID[userIDStr].map(({ credentialID }) => ({ 
 			type: "public-key", 
-			id: sodium.from_base64(
-				credentialsByID[userIDStr].credentialID,
-				sodium.base64_variants.ORIGINAL
-			)
-		}]
+			id: credentialID, 
+		}));
 	}
 
 	var userID = sodium.from_string(userIDStr);
@@ -179,10 +176,20 @@ async function registerNewCredential(name,userIDStr) {
 
 			// keep registered credential info in memory only
 			// (no persistence)
-			credentialsByID[userIDStr] = {
-				credentialID: regResult.response.credentialID,
-				publicKey: regResult.response.publicKey,
-			};
+			if (userIDStr in credentialsByID) {
+				credentialsByID[userIDStr] = [
+					...credentialsByID[userIDStr],
+					{
+						credentialID: regResult.response.credentialID,
+						publicKey: regResult.response.publicKey,
+					}
+				];
+			} else {
+				credentialsByID[userIDStr] = [{
+					credentialID: regResult.response.credentialID,
+					publicKey: regResult.response.publicKey,
+				}]
+			}
 
 			console.log("regResult:",regResult);
 		}
@@ -303,7 +310,10 @@ async function promptProvideAuth() {
 
 			cancelToken = new AbortController();
 			var authOptions = authDefaults({
-				allowCredentials: [ { type: "public-key", id: credentialsByID[userID].credentialID, }, ],
+				allowCredentials: credentialsByID[userID].map(({ credentialID }) => ({ 
+					type: "public-key", 
+					id: credentialID, 
+				})),
 				signal: cancelToken.signal,
 			});
 			try {
