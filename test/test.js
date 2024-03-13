@@ -143,6 +143,10 @@ async function registerNewCredential(name,userIDStr) {
 			displayName: name,
 			id: userID,
 		},
+		excludeCredentials: credentialsByID[userIDStr]?.map(({ credentialID }) => ({ 
+			type: "public-key", 
+			id: credentialID, 
+		})) ?? [],
 	});
 	try {
 		let regResult = await register(regOptions);
@@ -166,16 +170,38 @@ async function registerNewCredential(name,userIDStr) {
 
 			// keep registered credential info in memory only
 			// (no persistence)
-			credentialsByID[userIDStr] = {
-				credentialID: regResult.response.credentialID,
-				publicKey: regResult.response.publicKey,
-			};
+			if (userIDStr in credentialsByID) {
+				credentialsByID[userIDStr] = [
+					...credentialsByID[userIDStr],
+					{
+						credentialID: regResult.response.credentialID,
+						publicKey: regResult.response.publicKey,
+					}
+				];
+			} else {
+				credentialsByID[userIDStr] = [{
+					credentialID: regResult.response.credentialID,
+					publicKey: regResult.response.publicKey,
+				}]
+			}
 
 			console.log("regResult:",regResult);
 		}
 	}
 	catch (err) {
 		logError(err);
+
+		if (err.cause instanceof Error) {
+			var errorString = err.cause.toString();
+			if (errorString.includes("credentials already registered with the relying party")) {
+				showError(`
+					A credential already exists for this User ID.
+					Please try a different User ID or pick a different authenticator.
+				`);
+				return
+			}
+		} 
+
 		showError("Registering credential failed. Please try again.");
 	}
 }
@@ -278,7 +304,10 @@ async function promptProvideAuth() {
 
 			cancelToken = new AbortController();
 			var authOptions = authDefaults({
-				allowCredentials: [ { type: "public-key", id: credentialsByID[userID].credentialID, }, ],
+				allowCredentials: credentialsByID[userID].map(({ credentialID }) => ({ 
+					type: "public-key", 
+					id: credentialID, 
+				})),
 				signal: cancelToken.signal,
 			});
 			try {

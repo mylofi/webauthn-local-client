@@ -127,6 +127,20 @@ export default publicAPI;
 async function register(regOptions = regDefaults()) {
 	try {
 		if (supportsWebAuthn) {
+			// ensure credential IDs are binary (not base64 string)
+			if (Array.isArray(regOptions[regOptions[credentialTypeKey]].excludeCredentials)) {
+				regOptions[regOptions[credentialTypeKey]].excludeCredentials = (
+					regOptions[regOptions[credentialTypeKey]].excludeCredentials.map(entry => ({
+						...entry,
+						id: (
+							typeof entry.id == "string" ?
+								sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
+								entry.id
+						),
+					}))
+				);
+			}
+
 			let regResult = await navigator.credentials.create(regOptions);
 
 			let regClientDataRaw = new Uint8Array(regResult.response.clientDataJSON);
