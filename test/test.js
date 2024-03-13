@@ -143,10 +143,12 @@ async function registerNewCredential(name,userIDStr) {
 			displayName: name,
 			id: userID,
 		},
-		excludeCredentials: credentialsByID[userIDStr]?.map(({ credentialID }) => ({ 
-			type: "public-key", 
-			id: credentialID, 
-		})) ?? [],
+		excludeCredentials: (
+			(credentialsByID[userIDStr] || []).map(({ credentialID }) => ({
+				type: "public-key",
+				id: credentialID,
+			}))
+		),
 	});
 	try {
 		let regResult = await register(regOptions);
@@ -170,20 +172,13 @@ async function registerNewCredential(name,userIDStr) {
 
 			// keep registered credential info in memory only
 			// (no persistence)
-			if (userIDStr in credentialsByID) {
-				credentialsByID[userIDStr] = [
-					...credentialsByID[userIDStr],
-					{
-						credentialID: regResult.response.credentialID,
-						publicKey: regResult.response.publicKey,
-					}
-				];
-			} else {
-				credentialsByID[userIDStr] = [{
+			credentialsByID[userIDStr] = [
+				...(credentialsByID[userIDStr] || []),
+				{
 					credentialID: regResult.response.credentialID,
 					publicKey: regResult.response.publicKey,
-				}]
-			}
+				}
+			];
 
 			console.log("regResult:",regResult);
 		}
@@ -192,13 +187,12 @@ async function registerNewCredential(name,userIDStr) {
 		logError(err);
 
 		if (err.cause instanceof Error) {
-			var errorString = err.cause.toString();
-			if (errorString.includes("credentials already registered with the relying party")) {
-				showError(`
+			let errorString = err.cause.toString();
+			if (errorString.includes("credentials already registered")) {
+				return showError(`
 					A credential already exists for this User ID.
 					Please try a different User ID or pick a different authenticator.
 				`);
-				return
 			}
 		} 
 
@@ -304,10 +298,12 @@ async function promptProvideAuth() {
 
 			cancelToken = new AbortController();
 			var authOptions = authDefaults({
-				allowCredentials: credentialsByID[userID].map(({ credentialID }) => ({ 
-					type: "public-key", 
-					id: credentialID, 
-				})),
+				allowCredentials: (
+					(credentialsByID[userID] || []).map(({ credentialID }) => ({
+						type: "public-key",
+						id: credentialID,
+					}))
+				),
 				signal: cancelToken.signal,
 			});
 			try {
@@ -382,16 +378,15 @@ async function promptPickAuth() {
 
 async function onAuth(credentialID,publicKey) {
 	try {
-		let allowCredentials = [
-			...(
-				credentialID != null ?
-					[ { type: "public-key", id: credentialID, }, ] :
-					[]
-			),
-		];
 		let authOptions = authDefaults({
 			mediation: "optional",
-			allowCredentials,
+			allowCredentials: [
+				...(
+					credentialID != null ?
+						[ { type: "public-key", id: credentialID, }, ] :
+						[]
+				),
+			],
 		});
 		let authResult = await auth(authOptions);
 

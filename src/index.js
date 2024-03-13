@@ -128,18 +128,11 @@ async function register(regOptions = regDefaults()) {
 	try {
 		if (supportsWebAuthn) {
 			// ensure credential IDs are binary (not base64 string)
-			if (Array.isArray(regOptions[regOptions[credentialTypeKey]].excludeCredentials)) {
-				regOptions[regOptions[credentialTypeKey]].excludeCredentials = (
-					regOptions[regOptions[credentialTypeKey]].excludeCredentials.map(entry => ({
-						...entry,
-						id: (
-							typeof entry.id == "string" ?
-								sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
-								entry.id
-						),
-					}))
-				);
-			}
+			regOptions[regOptions[credentialTypeKey]].excludeCredentials = (
+				normalizeCredentialsList(
+					regOptions[regOptions[credentialTypeKey]].excludeCredentials
+				)
+			);
 
 			let regResult = await navigator.credentials.create(regOptions);
 
@@ -238,6 +231,9 @@ function regDefaults({
 	relyingPartyName = "wacg",
 	attestation = "none",
 	challenge = sodium.randombytes_buf(20),
+	excludeCredentials = [
+		// { type: "public-key", id: ..., }
+	],
 	user: {
 		name: userName = "wacg-user",
 		displayName: userDisplayName = userName,
@@ -277,6 +273,8 @@ function regDefaults({
 
 			challenge,
 
+			excludeCredentials,
+
 			pubKeyCredParams: publicKeyCredentialParams,
 
 			...otherPubKeyOptions,
@@ -302,18 +300,11 @@ async function auth(authOptions = authDefaults()) {
 	try {
 		if (supportsWebAuthn) {
 			// ensure credential IDs are binary (not base64 string)
-			if (Array.isArray(authOptions[authOptions[credentialTypeKey]].allowCredentials)) {
-				authOptions[authOptions[credentialTypeKey]].allowCredentials = (
-					authOptions[authOptions[credentialTypeKey]].allowCredentials.map(entry => ({
-						...entry,
-						id: (
-							typeof entry.id == "string" ?
-								sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
-								entry.id
-						),
-					}))
-				);
-			}
+			authOptions[authOptions[credentialTypeKey]].allowCredentials = (
+				normalizeCredentialsList(
+					authOptions[authOptions[credentialTypeKey]].allowCredentials
+				)
+			);
 
 			let authResult = await navigator.credentials.get(authOptions);
 			let authClientDataRaw = new Uint8Array(authResult.response.clientDataJSON);
@@ -662,4 +653,17 @@ function unpackPublicKeyJSON(publicKeyEntryJSON) {
 				publicKeyEntry.raw
 		),
 	};
+}
+
+function normalizeCredentialsList(credList) {
+	if (Array.isArray(credList)) {
+		return credList.map(entry => ({
+			...entry,
+			id: (
+				typeof entry.id == "string" ?
+					sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
+					entry.id
+			),
+		}));
+	}
 }
