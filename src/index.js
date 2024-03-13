@@ -488,7 +488,12 @@ async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,da
 				[ "verify", ]
 			);
 
-			return await crypto.subtle.verify(cipherOptions,pubKeySubtle,signature,data);
+			return await crypto.subtle.verify(
+				publicKeyAlgorithmsLookup[algoCOSE].cipherOpts,
+				pubKeySubtle,
+				signature,
+				data
+			);
 		}
 		catch (err) {
 			console.log(err);
