@@ -75,29 +75,33 @@ const publicKeyAlgorithmsLookup = Object.fromEntries(
 );
 const credentialTypeKey = Symbol("credential-type");
 const resetAbortReason = Symbol("reset-abort");
-const supportsWebAuthn = (
-	navigator.credentials &&
-	typeof navigator.credentials.create != "undefined" &&
-	typeof navigator.credentials.get != "undefined" &&
-	typeof PublicKeyCredential != "undefined" &&
-	typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
-	(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
-);
+async function checkWebAuthnSupport() {
+	return (
+		navigator.credentials &&
+		typeof navigator.credentials.create != "undefined" &&
+		typeof navigator.credentials.get != "undefined" &&
+		typeof PublicKeyCredential != "undefined" &&
+		typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
+		(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
+	)
+}
 
 // Re: https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable
 // Also: https://web.dev/articles/passkey-form-autofill
-const supportsConditionalMediation = (
-	typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
-	(await PublicKeyCredential.isConditionalMediationAvailable())
-);
+async function checkConditionalMediationSupport() {
+	return (
+		typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
+		(await PublicKeyCredential.isConditionalMediationAvailable())
+	)
+}
 
 
 // ********************************
 
 export {
 	resetAbortReason,
-	supportsWebAuthn,
-	supportsConditionalMediation,
+	checkWebAuthnSupport,
+	checkConditionalMediationSupport,
 
 	regDefaults,
 	register,
@@ -110,8 +114,8 @@ export {
 	fromBase64String,
 };
 var publicAPI = {
-	supportsWebAuthn,
-	supportsConditionalMediation,
+	checkWebAuthnSupport,
+	checkConditionalMediationSupport,
 
 	regDefaults,
 	register,
@@ -130,6 +134,7 @@ export default publicAPI;
 
 async function register(regOptions = regDefaults()) {
 	try {
+		let supportsWebAuthn = await checkWebAuthnSupport();
 		if (supportsWebAuthn) {
 			// ensure credential IDs are binary (not base64 string)
 			regOptions[regOptions[credentialTypeKey]].excludeCredentials = (
@@ -298,6 +303,7 @@ function regDefaults({
 
 async function auth(authOptions = authDefaults()) {
 	try {
+		let supportsWebAuthn = await checkWebAuthnSupport();
 		if (supportsWebAuthn) {
 			// ensure credential IDs are binary (not base64 string)
 			authOptions[authOptions[credentialTypeKey]].allowCredentials = (

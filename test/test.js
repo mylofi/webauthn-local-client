@@ -1,6 +1,6 @@
 import {
-	supportsWebAuthn,
-	supportsConditionalMediation,
+	checkWebAuthnSupport,
+	checkConditionalMediationSupport,
 	resetAbortReason,
 	register,
 	regDefaults,
@@ -315,7 +315,7 @@ async function promptProvideAuth() {
 		allowOutsideClick: true,
 		allowEscapeKey: true,
 
-		didOpen(popupEl) {
+		async didOpen(popupEl) {
 			userIDEl = document.getElementById("auth-user-id");
 
 			userIDEl.addEventListener("input",onUserIDInput,false);
@@ -323,6 +323,7 @@ async function promptProvideAuth() {
 			var confirmBtn = Swal.getConfirmButton();
 			confirmBtn.disabled = true;
 
+			let supportsConditionalMediation = await checkConditionalMediationSupport();
 			if (supportsConditionalMediation) {
 				startAuthAutofill().catch(logError);
 			}
