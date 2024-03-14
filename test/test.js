@@ -132,7 +132,7 @@ async function promptRegister(newRegistration = true) {
 	});
 
 	if (result.isConfirmed) {
-		return registerNewCredential(
+		return registerCredential(
 			result.value.registerName,
 			result.value.registerID,
 			newRegistration
@@ -162,7 +162,7 @@ async function promptRegister(newRegistration = true) {
 	}
 }
 
-async function registerNewCredential(name,userIDStr,newRegistration = true) {
+async function registerCredential(name,userIDStr,newRegistration = true) {
 	var userID = sodium.from_string(userIDStr);
 	var regOptions = regDefaults({
 		user: {
@@ -175,10 +175,12 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 		// on a re-registration
 		...(
 			(newRegistration) ? {
-				excludeCredentials: Object.values(credentialsByUserID).map(entry => ({
-					type: "public-key",
-					id: entry.credentialID,
-				})),
+				excludeCredentials: Object.entries(credentialsByUserID)
+					.filter(([userID,entry]) => (userID == userIDStr))
+					.map(([userID,entry]) => ({
+						type: "public-key",
+						id: entry.credentialID,
+					})),
 			} :
 
 			null
@@ -213,6 +215,8 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 			else {
 				registeredCredentialsEl.appendChild(li);
 			}
+
+			registeredCredentialsEl.scrollIntoView({ behavior: "smooth", block: "center", });
 
 			// keep registered credential info in memory only
 			// (no persistence)
@@ -260,7 +264,7 @@ async function promptAuth() {
 		title: "Authenticate",
 		html: `
 			<p>
-				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my user ID</button>
+				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my passkey</button>
 			</p>
 			<p>
 				<button type="button" id="auth-2-btn" class="swal2-styled swal2-default-outline modal-btn">Provide my user ID</button>
