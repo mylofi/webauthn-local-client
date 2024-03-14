@@ -30,12 +30,17 @@ ul li { margin: 0.7rem; }
 	<li>Now, the newly registered credential will appear in the list below (with a credential ID and Count), with an "authenticate" button next to it.</li>
 	<li>Register <em>another</em> new credential, with the same or different name, but with the <strong>same User ID</strong> (pasted from your clipboard). Notice this will fail with an error message.</li>
 	<li>Now, <strong>re-register the credential</strong>, with the same or different name, but with the <strong>same User ID</strong> (pasted from your clipboard). Notice this will succeed, and that the "Credential ID" for that entry will change in the list below (as does the underlying "publicKey").</li>
-	<li>Click that "authenticate" button in the credentials list below, and choose your passkey (Touch-ID, Face-ID, etc). Notice the count in the list will go up upon successful authentication.</li>
+	<li>Click that "authenticate" button in the credentials list below, and choose your passkey (Touch-ID, Face-ID, etc). Notice the count in the list will go up upon successful authentication. <sup><a href="#fn1">1</a></sup></li>
 	<li>Now click the "choose authentication method" button that appears above the credentials list.</li>
-	<li>Click the "Pick my passkey" button, and select your passkey from the browser modal prompt. Notice the count will go up again on success.</li>
+	<li>Click the "Pick my passkey" button, and select your passkey from the browser modal prompt. Notice the count will go up again on success. <sup><a href="#fn1">1</a></sup></li>
 	<li>Click "choose authentication" again, then click "Provide my user ID".</li>
-	<li>Click into the empty User ID text box, and notice the browser autofill shows the option to choose your passkey. Notice the count goes up again on success.</li>
-	<li>Click "choose authentication" one final time, then "Provide my user ID" again. Click into the input box, and paste in the User ID from your clipboard (from step 1). Click "Authenticate". Notice one last time, the count goes up on success.</li>
+	<li>Click into the empty User ID text box, and notice the browser autofill shows the option to choose your passkey. Notice the count goes up again on success. <sup><a href="#fn1">1</a></sup></li>
+	<li>Click "choose authentication" one final time, then "Provide my user ID" again. Click into the input box, and paste in the User ID from your clipboard (from step 1). Click "Authenticate". Notice one last time, the count goes up on success. <sup><a href="#fn1">1</a></sup></li>
+</ol>
+
+<h3>Footnotes</h3>
+<ol>
+	<li id="fn1">A signature counter is not supported by all authenticators. If not supported, the count will display as "n/a".</li>
 </ol>
 
 <hr>
