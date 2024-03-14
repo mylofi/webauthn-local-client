@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>WebAuthn Local Client: Tests</title>
 <style>
-.modal-btn { display: inline-block; color: white; background-color: black; border: 0; border-radius: 0.25em; font-size: 1em; }
+.modal-btn { display: inline-block; color: white; background-color: black; border: 0; border-radius: 0.25em; font-size: 1rem; }
 .toast-popup .swal2-html-container { white-space: nowrap; }
 </style>
 </head>
@@ -13,6 +13,8 @@
 
 <main>
 <h1>WebAuthn Local Client: Tests</h1>
+
+<h2><a href="https://github.com/mylofi/webauthn-local-client">Github</a></h2>
 
 <p>
 	Before running these tests, make sure you're on a device that supports <a href="https://webauthn.io/" target="_blank">Web Authentication</a>, or alternatively use browser DevTools to <a href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank">setup a virtual authenticator in Chrome</a>, or similar in Safari, or <a href="https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/" target="_blank">this Firefox add-on</a>.
@@ -32,7 +34,7 @@
 	<li>Click "choose authentication" yet again, then "Provide my user ID" again. Click into the input box, and paste in the User ID you copied to the clipboard in step (1). Click "Authenticate". Notice one last time, the count goes up on success.</li>
 </ol>
 <p>
-	<button type="button" id="register-btn">register new credential</button>
+	<button type="button" id="register-btn">register new credential</button> (or <button type="button" id="reregister-btn">re-register credential</button>)
 </p>
 <p>
 	<button type="button" id="auth-btn">choose authentication method</button>

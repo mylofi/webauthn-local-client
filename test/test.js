@@ -15,10 +15,11 @@ from "webauthn-local-client/src";
 
 
 var registerBtn;
+var reRegisterBtn;
 var authBtn;
 var registeredCredentialsEl;
 
-var credentialsByID = {};
+var credentialsByUserID = {};
 
 if (document.readyState == "loading") {
 	document.addEventListener("DOMContentLoaded",ready,false);
@@ -32,21 +33,33 @@ else {
 
 function ready() {
 	registerBtn = document.getElementById("register-btn");
+	reRegisterBtn = document.getElementById("reregister-btn");
 	authBtn = document.getElementById("auth-btn");
 	registeredCredentialsEl = document.getElementById("registered-credentials");
 
-	registerBtn.addEventListener("click",promptRegister,false);
+	registerBtn.addEventListener(
+		"click",
+		() => promptRegister(/*newRegistration=*/true),
+		false
+	);
+	reRegisterBtn.addEventListener(
+		"click",
+		() => promptRegister(/*newRegistration=*/false),
+		false
+	);
 	authBtn.addEventListener("click",promptAuth,false);
 	registeredCredentialsEl.addEventListener("click",onAuthCredential,true);
 }
 
-async function promptRegister() {
+async function promptRegister(newRegistration = true) {
 	var registerNameEl;
 	var registerIDEl;
 	var generateIDBtn;
 
 	var result = await Swal.fire({
-		title: "Register New Credential",
+		title: (
+			newRegistration ? "Register New Credential" : "Re-register Credential"
+		),
 		html: `
 			<p>
 				<label>
@@ -58,12 +71,17 @@ async function promptRegister() {
 				<label>
 					User ID:
 					<input type="text" id="register-id" class="swal2-input">
-				</label><br>
-				<button type="button" id="generate-id-btn" class="swal2-styled swal2-default-outline modal-btn">Generate Random</button>
+				</label>
+				${
+					newRegistration ? `
+						<br>
+						<button type="button" id="generate-id-btn" class="swal2-styled swal2-default-outline modal-btn">Generate Random</button>
+					` : ""
+				}
 			</p>
 		`,
 		showConfirmButton: true,
-		confirmButtonText: "Register",
+		confirmButtonText: newRegistration ? "Register" : "Re-register",
 		confirmButtonColor: "darkslateblue",
 		showCancelButton: true,
 		cancelButtonColor: "darkslategray",
@@ -77,13 +95,17 @@ async function promptRegister() {
 			generateIDBtn = document.getElementById("generate-id-btn");
 			registerNameEl.focus();
 
-			generateIDBtn.addEventListener("click",onGenerateID,false);
+			if (generateIDBtn) {
+				generateIDBtn.addEventListener("click",onGenerateID,false);
+			}
 			popupEl.addEventListener("keypress",onKeypress,true);
 		},
 
 		willClose(popupEl) {
 			popupEl.removeEventListener("keypress",onKeypress,true);
-			generateIDBtn.removeEventListener("click",onGenerateID,false);
+			if (generateIDBtn) {
+				generateIDBtn.removeEventListener("click",onGenerateID,false);
+			}
 
 			registerNameEl = registerIDEl = generateIDBtn = null;
 		},
@@ -97,7 +119,11 @@ async function promptRegister() {
 				return false;
 			}
 			if (!registerID) {
-				Swal.showValidationMessage("Please enter an ID (or generate a new one)");
+				Swal.showValidationMessage(
+					newRegistration ?
+						"Please enter a User ID (or generate a new one)" :
+						"Please enter an existing User ID"
+				);
 				return false;
 			}
 
@@ -108,7 +134,8 @@ async function promptRegister() {
 	if (result.isConfirmed) {
 		return registerNewCredential(
 			result.value.registerName,
-			result.value.registerID
+			result.value.registerID,
+			newRegistration
 		);
 	}
 
@@ -135,7 +162,7 @@ async function promptRegister() {
 	}
 }
 
-async function registerNewCredential(name,userIDStr) {
+async function registerNewCredential(name,userIDStr,newRegistration = true) {
 	var userID = sodium.from_string(userIDStr);
 	var regOptions = regDefaults({
 		user: {
@@ -143,16 +170,33 @@ async function registerNewCredential(name,userIDStr) {
 			displayName: name,
 			id: userID,
 		},
-		excludeCredentials: (
-			(credentialsByID[userIDStr] || []).map(({ credentialID }) => ({
-				type: "public-key",
-				id: credentialID,
-			}))
+
+		// only *exclude credentials* on a new registration, not
+		// on a re-registration
+		...(
+			(newRegistration) ? {
+				excludeCredentials: Object.values(credentialsByUserID).map(entry => ({
+					type: "public-key",
+					id: entry.credentialID,
+				})),
+			} :
+
+			null
 		),
 	});
 	try {
 		let regResult = await register(regOptions);
 		if (regResult.response) {
+			// on re-register, remove previous credential DOM element (if any)
+			if (!newRegistration && userIDStr in credentialsByUserID) {
+				let liEl = registeredCredentialsEl.querySelector(
+					`li[data-credential-id='${credentialsByUserID[userIDStr].credentialID}']`
+				);
+				if (liEl) {
+					liEl.remove();
+				}
+			}
+
 			// serialize credential info to DOM element
 			let li = document.createElement("li");
 			li.dataset.credentialId = regResult.response.credentialID;
@@ -172,21 +216,25 @@ async function registerNewCredential(name,userIDStr) {
 
 			// keep registered credential info in memory only
 			// (no persistence)
-			credentialsByID[userIDStr] = [
-				...(credentialsByID[userIDStr] || []),
-				{
-					credentialID: regResult.response.credentialID,
-					publicKey: regResult.response.publicKey,
-				}
-			];
+			credentialsByUserID[userIDStr] = {
+				credentialID: regResult.response.credentialID,
+				publicKey: regResult.response.publicKey,
+			};
 
 			console.log("regResult:",regResult);
+
+			showToast(
+				newRegistration ? "Registration Successful." : "Re-registration Successful."
+			);
 		}
 	}
 	catch (err) {
 		logError(err);
 
-		if (err.cause instanceof Error) {
+		if (
+			newRegistration &&
+			err.cause instanceof Error
+		) {
 			let errorString = err.cause.toString();
 			if (errorString.includes("credentials already registered")) {
 				return showError(`
@@ -196,7 +244,11 @@ async function registerNewCredential(name,userIDStr) {
 			}
 		} 
 
-		showError("Registering credential failed. Please try again.");
+		showError(
+			newRegistration ?
+				"Registering credential failed. Please try again." :
+				"Re-registering credential failed. Please try again."
+		);
 	}
 }
 
@@ -291,18 +343,24 @@ async function promptProvideAuth() {
 
 			// not previously recorded user ID for a
 			// registered credential?
-			if (!(userID in credentialsByID)) {
+			if (!(userID in credentialsByUserID)) {
 				Swal.showValidationMessage("Unrecognized user ID.");
 				return false;
 			}
 
 			cancelToken = new AbortController();
 			var authOptions = authDefaults({
-				allowCredentials: (
-					(credentialsByID[userID] || []).map(({ credentialID }) => ({
-						type: "public-key",
-						id: credentialID,
-					}))
+				...(
+					(userID in credentialsByUserID) ? {
+						allowCredentials: (
+							{
+								type: "public-key",
+								id: credentialsByUserID[userID].credentialID,
+							}
+						),
+					} :
+
+					null
 				),
 				signal: cancelToken.signal,
 			});

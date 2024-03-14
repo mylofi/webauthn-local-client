@@ -106,6 +106,8 @@ export {
 	verifyAuthResponse,
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
+	toBase64String,
+	fromBase64String,
 };
 var publicAPI = {
 	supportsWebAuthn,
@@ -118,6 +120,8 @@ var publicAPI = {
 	verifyAuthResponse,
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
+	toBase64String,
+	fromBase64String,
 };
 export default publicAPI;
 
@@ -176,9 +180,8 @@ async function register(regOptions = regDefaults()) {
 					credentialType: regResult.type,
 					...regOptions[regOptions[credentialTypeKey]],
 
-					challenge: sodium.to_base64(
-						regOptions[regOptions[credentialTypeKey]].challenge,
-						sodium.base64_variants.ORIGINAL
+					challenge: toBase64String(
+						regOptions[regOptions[credentialTypeKey]].challenge
 					),
 					...(Object.fromEntries(
 						Object.entries(regClientData).filter(([ key, val ]) => (
@@ -187,10 +190,7 @@ async function register(regOptions = regDefaults()) {
 					)),
 				},
 				response: {
-					credentialID: sodium.to_base64(
-						new Uint8Array(regResult.rawId),
-						sodium.base64_variants.ORIGINAL
-					),
+					credentialID: toBase64String(new Uint8Array(regResult.rawId)),
 					credentialType: regResult.type,
 					authenticatorAttachment: regResult.authenticatorAttachment,
 					publicKey: {
@@ -341,10 +341,7 @@ async function auth(authOptions = authDefaults()) {
 					)),
 				},
 				response: {
-					credentialID: sodium.to_base64(
-						new Uint8Array(authResult.rawId),
-						sodium.base64_variants.ORIGINAL
-					),
+					credentialID: toBase64String(new Uint8Array(authResult.rawId)),
 					signature: signatureRaw,
 					...(Object.fromEntries(
 						Object.entries(authData).filter(([ key, val ]) => (
@@ -629,12 +626,12 @@ function packPublicKeyJSON(publicKeyEntry,stringify = false) {
 		...publicKeyEntry,
 		spki: (
 			typeof publicKeyEntry.spki != "string" ?
-				sodium.to_base64(publicKeyEntry.spki,sodium.base64_variants.ORIGINAL) :
+				toBase64String(publicKeyEntry.spki) :
 				publicKeyEntry.spki
 		),
 		raw: (
 			typeof publicKeyEntry.raw != "string" ?
-				sodium.to_base64(publicKeyEntry.raw,sodium.base64_variants.ORIGINAL) :
+				toBase64String(publicKeyEntry.raw) :
 				publicKeyEntry.raw
 		),
 	};
@@ -649,12 +646,12 @@ function unpackPublicKeyJSON(publicKeyEntryJSON) {
 		...publicKeyEntry,
 		spki: (
 			typeof publicKeyEntry.spki == "string" ?
-				sodium.from_base64(publicKeyEntry.spki,sodium.base64_variants.ORIGINAL) :
+				fromBase64String(publicKeyEntry.spki) :
 				publicKeyEntry.spki
 		),
 		raw: (
 			typeof publicKeyEntry.raw == "string" ?
-				sodium.from_base64(publicKeyEntry.raw,sodium.base64_variants.ORIGINAL) :
+				fromBase64String(publicKeyEntry.raw) :
 				publicKeyEntry.raw
 		),
 	};
@@ -666,9 +663,17 @@ function normalizeCredentialsList(credList) {
 			...entry,
 			id: (
 				typeof entry.id == "string" ?
-					sodium.from_base64(entry.id,sodium.base64_variants.ORIGINAL) :
+					fromBase64String(entry.id) :
 					entry.id
 			),
 		}));
 	}
+}
+
+function toBase64String(val) {
+	return sodium.to_base64(val,sodium.base64_variants.ORIGINAL);
+}
+
+function fromBase64String(val) {
+	return sodium.from_base64(val,sodium.base64_variants.ORIGINAL);
 }
