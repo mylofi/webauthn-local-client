@@ -208,10 +208,10 @@ async function promptAuth() {
 		title: "Authenticate",
 		html: `
 			<p>
-				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Provide my user ID</button>
+				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my user ID</button>
 			</p>
 			<p>
-				<button type="button" id="auth-2-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my user ID</button>
+				<button type="button" id="auth-2-btn" class="swal2-styled swal2-default-outline modal-btn">Provide my user ID</button>
 			</p>
 		`,
 		showConfirmButton: false,
@@ -226,13 +226,13 @@ async function promptAuth() {
 			auth2Btn = document.getElementById("auth-2-btn");
 			auth1Btn.focus();
 
-			auth1Btn.addEventListener("click",promptProvideAuth,false);
-			auth2Btn.addEventListener("click",promptPickAuth,false);
+			auth1Btn.addEventListener("click",promptPickAuth,false);
+			auth2Btn.addEventListener("click",promptProvideAuth,false);
 		},
 
 		willClose(popupEl) {
-			auth1Btn.removeEventListener("click",promptProvideAuth,false);
-			auth2Btn.removeEventListener("click",promptPickAuth,false);
+			auth1Btn.removeEventListener("click",promptPickAuth,false);
+			auth2Btn.removeEventListener("click",promptProvideAuth,false);
 
 			auth1Btn = auth2Btn = null;
 		},
@@ -352,6 +352,17 @@ async function promptProvideAuth() {
 		resetCancelToken();
 
 		console.log("authResult (autofill):",authResult);
+
+		// show the User ID in the input box, for UX purposes
+		if (authResult && authResult.response && authResult.response.userID) {
+			userIDEl.readonly = true;
+			userIDEl.value = (new TextDecoder()).decode(authResult.response.userID);
+			userIDEl.select();
+
+			// brief pause to ensure user can see their User ID
+			// filled in
+			await new Promise(res => setTimeout(res,500));
+		}
 
 		return checkAuthResponse(authResult);
 	}

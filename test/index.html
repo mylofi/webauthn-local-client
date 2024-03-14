@@ -2,6 +2,7 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>WebAuthn Local Client: Tests</title>
 <style>
 .modal-btn { display: inline-block; color: white; background-color: black; border: 0; border-radius: 0.25em; font-size: 1em; }
@@ -17,13 +18,24 @@
 	Before running these tests, make sure you're on a device that supports <a href="https://webauthn.io/" target="_blank">Web Authentication</a>, or alternatively use browser DevTools to <a href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank">setup a virtual authenticator in Chrome</a>, or similar in Safari, or <a href="https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/" target="_blank">this Firefox add-on</a>.
 </p>
 <p>
-	<strong>NOTE:</strong> This test does not store anything (LocalStorage, etc), so on each page load, you should reset the authenticator by removing any credentials created previously by this test suite.
+	<strong>NOTE:</strong> This test-bed does not store anything (LocalStorage, server, etc), so to prevent confusion, on each page load you should reset the authenticator by removing any credentials created on a previous page load and run of these tests.
 </p>
+<h3>Steps To Run All 4 Authentication Tests:</h3>
+<ol>
+	<li>Register a new credential. Enter any username you like. Also put in any text you want for User ID, or click the "Generate Random" button. Make sure to copy the User ID to your clipboard <strong>before</strong> clicking the "Register" button.</li>
+	<li>Now, the newly registered credential will appear in the list below (with a credential ID and Count), with an "authenticate" button next to it.</li>
+	<li>Click that "authenticate" button, and choose your passkey (Touch-ID, Face-ID, etc). Notice the count in the list will go up upon successful authentication.</li>
+	<li>Now click the "choose authentication method" button that appears above the credentials list.</li>
+	<li>Click the "Pick my user ID" button, and select your passkey from the browser modal prompt. Notice the count will go up again on success.</li>
+	<li>Click "choose authentication" again, then click "Provide my user ID".</li>
+	<li>Click into the empty User ID text box, and notice the browser autofill shows the option to choose your passkey. Notice the count goes up again on success.</li>
+	<li>Click "choose authentication" yet again, then "Provide my user ID" again. Click into the input box, and paste in the User ID you copied to the clipboard in step (1). Click "Authenticate". Notice one last time, the count goes up on success.</li>
+</ol>
 <p>
 	<button type="button" id="register-btn">register new credential</button>
 </p>
 <p>
-	<button type="button" id="auth-btn">authenticate</button>
+	<button type="button" id="auth-btn">choose authentication method</button>
 </p>
 
 <hr>
