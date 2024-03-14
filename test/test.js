@@ -393,6 +393,7 @@ async function promptProvideAuth() {
 			catch (err) {
 				logError(err);
 				Swal.showValidationMessage("Oops, authentication didn't work, please try again.");
+				startAuthAutofill().catch(logError);
 				return false;
 			}
 		},
