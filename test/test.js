@@ -1,14 +1,17 @@
 import {
-	checkWebAuthnSupport,
-	checkConditionalMediationSupport,
-	resetAbortReason,
+	supportsWebAuthn,
+	supportsConditionalMediation,
+
 	register,
 	regDefaults,
 	auth,
 	authDefaults,
 	verifyAuthResponse,
+
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
+	toUTF8String,
+	resetAbortReason,
 }
 // swap "src" for "dist" here to test against the dist/* files
 from "webauthn-local-client/src";
@@ -39,26 +42,27 @@ function ready() {
 
 	registerBtn.addEventListener(
 		"click",
-		() => promptRegister(/*newRegistration=*/true),
+		() => promptRegister(/*isNewRegistration=*/true),
 		false
 	);
 	reRegisterBtn.addEventListener(
 		"click",
-		() => promptRegister(/*newRegistration=*/false),
+		() => promptRegister(/*isNewRegistration=*/false),
 		false
 	);
 	authBtn.addEventListener("click",promptAuth,false);
 	registeredCredentialsEl.addEventListener("click",onAuthCredential,true);
 }
 
-async function promptRegister(newRegistration = true) {
+async function promptRegister(isNewRegistration = true) {
 	var registerNameEl;
 	var registerIDEl;
 	var generateIDBtn;
+	var copyBtn;
 
 	var result = await Swal.fire({
 		title: (
-			newRegistration ? "Register New Credential" : "Re-register Credential"
+			isNewRegistration ? "Register New Credential" : "Re-register Credential"
 		),
 		html: `
 			<p>
@@ -71,17 +75,17 @@ async function promptRegister(newRegistration = true) {
 				<label>
 					User ID:
 					<input type="text" id="register-id" class="swal2-input">
-				</label>
+				</label><br>
 				${
-					newRegistration ? `
-						<br>
+					isNewRegistration ? `
 						<button type="button" id="generate-id-btn" class="swal2-styled swal2-default-outline modal-btn">Generate Random</button>
 					` : ""
 				}
+				<button type="button" id="copy-user-id-btn" class="swal2-styled swal2-default-outline modal-btn">Copy</button>
 			</p>
 		`,
 		showConfirmButton: true,
-		confirmButtonText: newRegistration ? "Register" : "Re-register",
+		confirmButtonText: isNewRegistration ? "Register" : "Re-register",
 		confirmButtonColor: "darkslateblue",
 		showCancelButton: true,
 		cancelButtonColor: "darkslategray",
@@ -93,16 +97,19 @@ async function promptRegister(newRegistration = true) {
 			registerNameEl = document.getElementById("register-name");
 			registerIDEl = document.getElementById("register-id");
 			generateIDBtn = document.getElementById("generate-id-btn");
+			copyBtn = document.getElementById("copy-user-id-btn");
 			registerNameEl.focus();
 
 			if (generateIDBtn) {
 				generateIDBtn.addEventListener("click",onGenerateID,false);
 			}
+			copyBtn.addEventListener("click",onCopyID,false);
 			popupEl.addEventListener("keypress",onKeypress,true);
 		},
 
 		willClose(popupEl) {
 			popupEl.removeEventListener("keypress",onKeypress,true);
+			copyBtn.removeEventListener("click",onCopyID,false);
 			if (generateIDBtn) {
 				generateIDBtn.removeEventListener("click",onGenerateID,false);
 			}
@@ -120,7 +127,7 @@ async function promptRegister(newRegistration = true) {
 			}
 			if (!registerID) {
 				Swal.showValidationMessage(
-					newRegistration ?
+					isNewRegistration ?
 						"Please enter a User ID (or generate a new one)" :
 						"Please enter an existing User ID"
 				);
@@ -132,10 +139,10 @@ async function promptRegister(newRegistration = true) {
 	});
 
 	if (result.isConfirmed) {
-		return registerNewCredential(
+		return registerCredential(
 			result.value.registerName,
 			result.value.registerID,
-			newRegistration
+			isNewRegistration
 		);
 	}
 
@@ -160,9 +167,21 @@ async function promptRegister(newRegistration = true) {
 			sodium.base64_variants.ORIGINAL
 		);
 	}
+
+	async function onCopyID() {
+		if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+			await navigator.clipboard.writeText(registerIDEl.value);
+		}
+		else {
+			registerIDEl.select();
+			document.execCommand("copy");
+		}
+		Swal.showValidationMessage("copied");
+		setTimeout(() => Swal.resetValidationMessage(),500);
+	}
 }
 
-async function registerNewCredential(name,userIDStr,newRegistration = true) {
+async function registerCredential(name,userIDStr,isNewRegistration = true) {
 	var userID = sodium.from_string(userIDStr);
 	var regOptions = regDefaults({
 		user: {
@@ -174,11 +193,13 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 		// only *exclude credentials* on a new registration, not
 		// on a re-registration
 		...(
-			(newRegistration) ? {
-				excludeCredentials: Object.values(credentialsByUserID).map(entry => ({
-					type: "public-key",
-					id: entry.credentialID,
-				})),
+			(isNewRegistration) ? {
+				excludeCredentials: Object.entries(credentialsByUserID)
+					.filter(([userID,entry]) => (userID == userIDStr))
+					.map(([userID,entry]) => ({
+						type: "public-key",
+						id: entry.credentialID,
+					})),
 			} :
 
 			null
@@ -188,7 +209,7 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 		let regResult = await register(regOptions);
 		if (regResult.response) {
 			// on re-register, remove previous credential DOM element (if any)
-			if (!newRegistration && userIDStr in credentialsByUserID) {
+			if (!isNewRegistration && userIDStr in credentialsByUserID) {
 				let liEl = registeredCredentialsEl.querySelector(
 					`li[data-credential-id='${credentialsByUserID[userIDStr].credentialID}']`
 				);
@@ -200,6 +221,7 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 			// serialize credential info to DOM element
 			let li = document.createElement("li");
 			li.dataset.credentialId = regResult.response.credentialID;
+			// NOTE: deliberately used her to show using the 'packPublicKeyJSON()' util
 			li.dataset.publicKey = packPublicKeyJSON(regResult.response.publicKey,/*stringify=*/true);
 			li.innerHTML = `
 				<strong>${name}</strong>
@@ -214,6 +236,8 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 				registeredCredentialsEl.appendChild(li);
 			}
 
+			registeredCredentialsEl.scrollIntoView({ behavior: "smooth", block: "center", });
+
 			// keep registered credential info in memory only
 			// (no persistence)
 			credentialsByUserID[userIDStr] = {
@@ -223,16 +247,16 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 
 			console.log("regResult:",regResult);
 
-			showToast(
-				newRegistration ? "Registration Successful." : "Re-registration Successful."
-			);
+			let regType = isNewRegistration ? "Registering" : "Re-registering";
+			let forUserID = `(${toUTF8String(regResult.request.user.id)})`;
+			showToast(`${regType} ${forUserID} successful.`);
 		}
 	}
 	catch (err) {
 		logError(err);
 
 		if (
-			newRegistration &&
+			isNewRegistration &&
 			err.cause instanceof Error
 		) {
 			let errorString = err.cause.toString();
@@ -244,11 +268,12 @@ async function registerNewCredential(name,userIDStr,newRegistration = true) {
 			}
 		} 
 
-		showError(
-			newRegistration ?
-				"Registering credential failed. Please try again." :
-				"Re-registering credential failed. Please try again."
+		let regType = (
+			isNewRegistration ?
+				"Registering" :
+				"Re-registering"
 		);
+		showError(`${regType} credential failed. Please try again.`);
 	}
 }
 
@@ -260,7 +285,7 @@ async function promptAuth() {
 		title: "Authenticate",
 		html: `
 			<p>
-				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my user ID</button>
+				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my passkey</button>
 			</p>
 			<p>
 				<button type="button" id="auth-2-btn" class="swal2-styled swal2-default-outline modal-btn">Provide my user ID</button>
@@ -374,6 +399,7 @@ async function promptProvideAuth() {
 			catch (err) {
 				logError(err);
 				Swal.showValidationMessage("Oops, authentication didn't work, please try again.");
+				startAuthAutofill().catch(logError);
 				return false;
 			}
 		},
@@ -415,7 +441,7 @@ async function promptProvideAuth() {
 		// show the User ID in the input box, for UX purposes
 		if (authResult && authResult.response && authResult.response.userID) {
 			userIDEl.readonly = true;
-			userIDEl.value = (new TextDecoder()).decode(authResult.response.userID);
+			userIDEl.value = toUTF8String(authResult.response.userID);
 			userIDEl.select();
 
 			// brief pause to ensure user can see their User ID
@@ -474,9 +500,12 @@ async function onAuthCredential(evt) {
 	if (evt.target.matches(".cred-auth-btn")) {
 		let liEl = evt.target.closest("li[data-credential-id]");
 		let credentialID = liEl.dataset.credentialId;
+		// NOTE: deliberately used her to show using the 'unpackPublicKeyJSON()' util
 		let publicKey = unpackPublicKeyJSON(liEl.dataset.publicKey);
 		let authResult = await onAuth(credentialID,publicKey);
-		return checkAuthResponse(authResult,credentialID,publicKey);
+		if (authResult) {
+			return checkAuthResponse(authResult,credentialID,publicKey);
+		}
 	}
 }
 
@@ -502,8 +531,14 @@ async function checkAuthResponse(authResult,credentialID,publicKey) {
 		}
 	}
 	return void (
-		authSuccess ?
-			showToast("Authentication successful.") :
+		authSuccess ? (
+				showToast(`Authentication${(
+					"userID" in authResult.response ?
+						` (${toUTF8String(authResult.response.userID)})` :
+						""
+				)} successful.`)
+			) :
+
 			showError("Authentication failed.")
 	);
 }

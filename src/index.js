@@ -99,33 +99,46 @@ async function checkConditionalMediationSupport() {
 // ********************************
 
 export {
-	resetAbortReason,
-	checkWebAuthnSupport,
-	checkConditionalMediationSupport,
+	// feature support tests
+	supportsWebAuthn,
+	supportsConditionalMediation,
 
+	// main API
 	regDefaults,
 	register,
 	authDefaults,
 	auth,
 	verifyAuthResponse,
+
+	// helper utils
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
 	toBase64String,
 	fromBase64String,
+	toUTF8String,
+	fromUTF8String,
+	resetAbortReason,
 };
 var publicAPI = {
-	checkWebAuthnSupport,
-	checkConditionalMediationSupport,
+	// feature support tests
+	supportsWebAuthn,
+	supportsConditionalMediation,
 
+	// main API
 	regDefaults,
 	register,
 	authDefaults,
 	auth,
 	verifyAuthResponse,
+
+	// helper utils
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
 	toBase64String,
 	fromBase64String,
+	toUTF8String,
+	fromUTF8String,
+	resetAbortReason,
 };
 export default publicAPI;
 
@@ -146,7 +159,7 @@ async function register(regOptions = regDefaults()) {
 			let regResult = await navigator.credentials.create(regOptions);
 
 			let regClientDataRaw = new Uint8Array(regResult.response.clientDataJSON);
-			let regClientData = JSON.parse(sodium.to_string(regClientDataRaw));
+			let regClientData = JSON.parse(toUTF8String(regClientDataRaw));
 			if (regClientData.type != "webauthn.create") {
 				throw new Error("Invalid registration response");
 			}
@@ -314,7 +327,7 @@ async function auth(authOptions = authDefaults()) {
 
 			let authResult = await navigator.credentials.get(authOptions);
 			let authClientDataRaw = new Uint8Array(authResult.response.clientDataJSON);
-			let authClientData = JSON.parse(sodium.to_string(authClientDataRaw));
+			let authClientData = JSON.parse(toUTF8String(authClientDataRaw));
 			if (authClientData.type != "webauthn.get") {
 				throw new Error("Invalid auth response");
 			}
@@ -579,7 +592,7 @@ async function computeVerificationData(authDataRaw,clientDataRaw) {
 
 async function checkRPID(rpIDHash,origRPID) {
 	var originHash = await computeSHA256Hash(
-		sodium.from_string(origRPID)
+		fromUTF8String(origRPID)
 	);
 	return (
 		rpIDHash.length > 0 &&
@@ -682,4 +695,12 @@ function toBase64String(val) {
 
 function fromBase64String(val) {
 	return sodium.from_base64(val,sodium.base64_variants.ORIGINAL);
+}
+
+function toUTF8String(val) {
+	return sodium.to_string(val);
+}
+
+function fromUTF8String(val) {
+	return sodium.from_string(val);
 }
