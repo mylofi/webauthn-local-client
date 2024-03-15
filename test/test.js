@@ -55,6 +55,7 @@ async function promptRegister(newRegistration = true) {
 	var registerNameEl;
 	var registerIDEl;
 	var generateIDBtn;
+	var copyBtn;
 
 	var result = await Swal.fire({
 		title: (
@@ -71,13 +72,13 @@ async function promptRegister(newRegistration = true) {
 				<label>
 					User ID:
 					<input type="text" id="register-id" class="swal2-input">
-				</label>
+				</label><br>
 				${
 					newRegistration ? `
-						<br>
 						<button type="button" id="generate-id-btn" class="swal2-styled swal2-default-outline modal-btn">Generate Random</button>
 					` : ""
 				}
+				<button type="button" id="copy-user-id-btn" class="swal2-styled swal2-default-outline modal-btn">Copy</button>
 			</p>
 		`,
 		showConfirmButton: true,
@@ -93,16 +94,19 @@ async function promptRegister(newRegistration = true) {
 			registerNameEl = document.getElementById("register-name");
 			registerIDEl = document.getElementById("register-id");
 			generateIDBtn = document.getElementById("generate-id-btn");
+			copyBtn = document.getElementById("copy-user-id-btn");
 			registerNameEl.focus();
 
 			if (generateIDBtn) {
 				generateIDBtn.addEventListener("click",onGenerateID,false);
 			}
+			copyBtn.addEventListener("click",onCopyID,false);
 			popupEl.addEventListener("keypress",onKeypress,true);
 		},
 
 		willClose(popupEl) {
 			popupEl.removeEventListener("keypress",onKeypress,true);
+			copyBtn.removeEventListener("click",onCopyID,false);
 			if (generateIDBtn) {
 				generateIDBtn.removeEventListener("click",onGenerateID,false);
 			}
@@ -159,6 +163,18 @@ async function promptRegister(newRegistration = true) {
 			sodium.randombytes_buf(10),
 			sodium.base64_variants.ORIGINAL
 		);
+	}
+
+	async function onCopyID() {
+		if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+			await navigator.clipboard.writeText(registerIDEl.value);
+		}
+		else {
+			registerIDEl.select();
+			document.execCommand("copy");
+		}
+		Swal.showValidationMessage("copied");
+		setTimeout(() => Swal.resetValidationMessage(),500);
 	}
 }
 
