@@ -23,9 +23,11 @@ ul li { margin: 0.7rem; }
 <p>
 	Before running these tests, make sure you're on a device that supports <a href="https://webauthn.io/" target="_blank">Web Authentication</a>, or alternatively use browser DevTools to <a href="https://developer.chrome.com/docs/devtools/webauthn" target="_blank">setup a virtual authenticator in Chrome</a>, or similar in Safari, or <a href="https://addons.mozilla.org/en-US/firefox/addon/webdevauthn/" target="_blank">this Firefox add-on</a>.
 </p>
+<hr>
 <p>
-	<strong>NOTE:</strong> This test-bed does not store anything (LocalStorage, server, etc), so to prevent confusion, on each page load you should reset the authenticator by removing any credentials created on a previous page load and run of these tests.
+	<strong>NOTE:</strong> This test-bed <strong>does not persist</strong> (in LocalStorage, on a server, etc) any credentials or other information entered here. To reduce confusion, on each page load you should probably reset your device's authenticator (or virtual authenticator) by removing any credentials created on previous runs of these tests.
 </p>
+<hr>
 <h2>Steps To Run (Re-)Registration [2] and Authentication [4] Tests:</h2>
 <ol>
 	<li>Register a new credential. Enter any username you like. Also put in any text you want for User ID, or click the "Generate Random" button. Make sure to copy the User ID to your clipboard <strong>before</strong> clicking the "Register" button.</li>
