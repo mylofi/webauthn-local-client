@@ -340,7 +340,7 @@ async function promptProvideAuth() {
 		allowOutsideClick: true,
 		allowEscapeKey: true,
 
-		async didOpen(popupEl) {
+		didOpen(popupEl) {
 			userIDEl = document.getElementById("auth-user-id");
 
 			userIDEl.addEventListener("input",onUserIDInput,false);
@@ -348,7 +348,6 @@ async function promptProvideAuth() {
 			var confirmBtn = Swal.getConfirmButton();
 			confirmBtn.disabled = true;
 
-			let supportsConditionalMediation = await checkConditionalMediationSupport();
 			if (supportsConditionalMediation) {
 				startAuthAutofill().catch(logError);
 			}

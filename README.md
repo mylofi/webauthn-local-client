@@ -56,9 +56,7 @@ import { register, auth } from "webauthn-local-client";
 To check if `WebAuthn` is supported on the device:
 
 ```js
-import { checkWebAuthnSupport } from "webauthn-local-client";
-
-let supportsWebAuthn = await checkWebAuthnSupport();
+import { supportsWebAuthn } from "webauthn-local-client";
 
 if (supportsWebAuthn) {
     // welcome to the future, without passwords!
@@ -72,9 +70,7 @@ else {
 To check if [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill) is supported on the device:
 
 ```js
-import { checkConditionalMediationSupport } from "webauthn-local-client";
-
-let supportsConditionalMediation = await checkConditionalMediationSupport();
+import { supportsConditionalMediation } from "webauthn-local-client";
 
 if (supportsConditionalMediation) {
     // provide an <input> and UX for user to
