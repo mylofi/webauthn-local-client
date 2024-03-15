@@ -76,6 +76,7 @@ const publicKeyAlgorithmsLookup = Object.fromEntries(
 const credentialTypeKey = Symbol("credential-type");
 const resetAbortReason = Symbol("reset-abort");
 const supportsWebAuthn = (
+	typeof navigator != 'undefined' &&
 	navigator.credentials &&
 	typeof navigator.credentials.create != "undefined" &&
 	typeof navigator.credentials.get != "undefined" &&
@@ -87,6 +88,7 @@ const supportsWebAuthn = (
 // Re: https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable
 // Also: https://web.dev/articles/passkey-form-autofill
 const supportsConditionalMediation = (
+	typeof navigator != 'undefined' &&
 	typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
 	(await PublicKeyCredential.isConditionalMediationAvailable())
 );
