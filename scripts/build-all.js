@@ -8,6 +8,7 @@ var fsp = require("fs/promises");
 
 var micromatch = require("micromatch");
 var recursiveReadDir = require("recursive-readdir-sync");
+var terser = require("terser");
 
 const PKG_ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
@@ -70,12 +71,21 @@ async function main() {
 		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
 	);
 
-	// copy external dependencies
-	//
-	// read ASN1 dist file
+	var indexContents = await fsp.readFile(path.join(DIST_DIR,"index.js"),{ encoding: "utf8", });
 	var asn1Contents = await fsp.readFile(ASN1_SRC,{ encoding: "utf8", });
 
 	await Promise.all([
+		// build only.index.js (for bundlers)
+		fsp.writeFile(
+			path.join(DIST_DIR,"only.index.js"),
+			(
+				indexContents
+					.replace(/(WebAuthn-Local-Client: )(index.js)/,"$1only.$2")
+					.replace(/import ?".\/external.js";?/,"")
+			),
+			{ encoding: "utf8", }
+		),
+		// add ASN1's license-required copyright header
 		fsp.writeFile(
 			path.join(DIST_EXTERNAL_DIR,path.basename(ASN1_SRC)),
 			// append MPL2-required copyright header
@@ -116,6 +126,12 @@ async function copyFilesTo(files,fromBasePath,toDir,copyrightHeader,skipPatterns
 		}
 
 		let contents = await fsp.readFile(fromPath,{ encoding: "utf8", });
+
+		// JS file (to minify)?
+		if (/\.[mc]?js$/i.test(relativePath)) {
+			contents = await minifyJS(contents);
+		}
+
 		await fsp.writeFile(
 			outputPath,
 			`${
@@ -126,6 +142,26 @@ async function copyFilesTo(files,fromBasePath,toDir,copyrightHeader,skipPatterns
 			{ encoding: "utf8", }
 		);
 	}
+}
+
+async function minifyJS(contents) {
+	let result = await terser.minify(contents,{
+		mangle: {
+			keep_fnames: true,
+		},
+		compress: {
+			keep_fnames: true,
+		},
+		output: {
+			comments: /^!/,
+		},
+		module: true,
+	});
+	if (!(result && result.code)) {
+		if (result.error) throw result.error;
+		else throw result;
+	}
+	return result.code;
 }
 
 function matchesSkipPattern(pathStr,skipPatterns) {

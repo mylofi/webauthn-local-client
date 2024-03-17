@@ -19,7 +19,8 @@
 	},
 	"devDependencies": {
 		"micromatch": "~4.0.5",
-		"recursive-readdir-sync": "~1.0.6"
+		"recursive-readdir-sync": "~1.0.6",
+		"terser": "~5.29.2"
 	},
 	"repository": "mylofi/webauthn-local-client",
 	"keywords": [
