@@ -2,7 +2,17 @@
 	"name": "webauthn-local-client",
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
-	"main": "./src/index.js",
+	"main": "./dist/only.index.js",
+	"exports": "./dist/only.index.js",
+	"browser": {
+		"webauthn-local-client": "./dist/only.index.js",
+		"./index.js": "./dist/only.index.js",
+		"./external.js": false,
+		"./external/libsodium.js": "./dist/external/libsodium.js",
+		"./external/libsodium-wrappers.js": "./dist/external/libsodium-wrappers.js",
+		"./external/cbor.js": "./dist/external/cbor.js",
+		"./external/asn1.all.min.js": "./dist/external/asn1.all.min.js"
+	},
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
 		"build:gh-pages": "npm run build:all && node scripts/build-gh-pages.js",

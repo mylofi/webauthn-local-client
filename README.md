@@ -17,23 +17,48 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 **Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn) or [this one](https://github.com/raohwork/webauthn-client).
 
-## Usage
+## Deployment
 
-The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) ships with a `dist/` directory with all files you need to deploy.
+The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) includes a `dist/` directory with all files you need to deploy **webauthn-local-client** (and its dependencies) into your application/project.
 
-Make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets, and copy all files from `dist/` (including `dist/external/*` files) as-is into it.
+But if you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
 
-Then import the library in an ESM module in your browser app:
+### WITH a bundler
+
+If your project uses a bundler tool (webpack, vite, rollup, etc), you should be able bundle this library (along with its dependencies) without changes, via the various entries in the `./package.json` -- namely the `main`, `exports`, and `browser` fields.
+
+The files needed for bundling/deployment are:
+
+* `dist/only.index.js` (not `dist/index.js` or `dist/external.js`; these are only intended [for application projects WITHOUT a bundler](#without-a-bundler))
+* `dist/external/libsodium.js`
+* `dist/external/libsodium-wrappers.js`
+* `dist/external/cbor.js`
+* `dist/external/asn1.all.min.js`
+
+**Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment when bundling the file.
+
+### WITHOUT a bundler
+
+To use this library directly -- i.e., in a classic/vanilla web project without a modern bundler tool -- make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets folder, and copy over all files from `dist/` into that location:
+
+* `dist/index.js` (not `dist/only.index.js`, which is only intended [for application projects WITH a bundler](#with-a-bundler))
+* `dist/external.js`
+* `dist/external/libsodium.js`
+* `dist/external/libsodium-wrappers.js`
+* `dist/external/cbor.js`
+* `dist/external/asn1.all.min.js`
+
+## Import/Usage
+
+To import and use the library in a browser app:
 
 ```js
 import { register, auth } from "/path/to/webauthn-local-client/index.js";
 ```
 
-**Note:** This library exposes its API in modern ESM format, but it relies on dependencies that are non-ESM (UMD), which automatically add themselves to the global namespace; it cannot use `import` to load its own dependencies. Instead, the included `external.js` module manages loading the dependencies via `<script>` element injection into the page. If your development/deployment processes include bundling (webpack, rollup, etc), please configure your tool(s) to skip bundling this library and its dependencies, and just copy them over as indicated above. Alternately, before/during build, you'll need to make sure the `import "./external.js"` line at the top of `index.js` is removed/commented out, to ensure that module is skipped in the bundle.
+### Using Import Map
 
-### Loading via Import Map
-
-If your app uses an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), you can and an entry for this library:
+If your browser app has an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), you can and an entry for this library:
 
 ```html
 <script type="importmap">
@@ -45,7 +70,7 @@ If your app uses an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HT
 </script>
 ```
 
-Then you can `import` it in a more friendly/readable way:
+Then you'll be able to `import` the library in a more friendly/readable way:
 
 ```js
 import { register, auth } from "webauthn-local-client";
@@ -53,10 +78,10 @@ import { register, auth } from "webauthn-local-client";
 
 ### Supported?
 
-To check if `WebAuthn` is supported on the device:
+To check if `WebAuthn` API and functionality is supported on the device:
 
 ```js
-import { supportsWebAuthn } from "webauthn-local-client";
+import { supportsWebAuthn } from "...";
 
 if (supportsWebAuthn) {
     // welcome to the future, without passwords!
@@ -70,7 +95,7 @@ else {
 To check if [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill) is supported on the device:
 
 ```js
-import { supportsConditionalMediation } from "webauthn-local-client";
+import { supportsConditionalMediation } from "...";
 
 if (supportsConditionalMediation) {
     // provide an <input> and UX for user to
@@ -90,7 +115,7 @@ else {
 To register a new credential in a `WebAuthn`-exposed authenticator, use `register()`:
 
 ```js
-import { register, regDefaults } from "..";
+import { register, regDefaults } from "...";
 
 // optional:
 var regOptions = regDefaults({
@@ -157,7 +182,7 @@ Typically, though, [web applications *assume*](https://medium.com/webauthnworks/
 To authenticate (i.e., [perform an assertion](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Attestation_and_Assertion#assertion)) with an existing credential via a `WebAuthn`-exposed authenticator, use `auth()`:
 
 ```js
-import { auth, authDefaults } from "..";
+import { auth, authDefaults } from "...";
 
 // optional:
 var authOptions = authDefaults({
@@ -190,7 +215,7 @@ Typical `auth()` configuration options:
     For certain UX flows, such as switching from the conditional-mediation to another authentication approach, you will need to cancel (via `signal`) a previous call to `auth()` before invoking an `auth()` call with different options. But calling `abort()` causes that pending `auth()` to throw an exception. To suppress this exception when resetting, pass the `resetAbortReason` value:
 
     ```js
-    import { resetAbortReason, authDefaults, auth } from "..";
+    import { resetAbortReason, authDefaults, auth } from "...";
 
     var cancelToken = new AbortController();
     var authResult = await auth({ /* .. */ , signal: cancelToken.signal });
@@ -231,7 +256,7 @@ If `auth()` completes completes successfully, the return value (`authResult` abo
 To verify an authentication response (from `auth()`), use `verifyAuthResponse()`:
 
 ```js
-import { verifyAuthResponse, } from "..";
+import { verifyAuthResponse, } from "...";
 
 var publicKey = ... // aka, regResult.response.publicKey
 
@@ -246,7 +271,7 @@ var verified = await verifyAuthResponse(
 If you used `packPublicKeyJSON()` on the original `publicKey` value to store/transmit it, you'll need to use `unpackPublicKeyJSON()` before passing it to `verifyAuthResponse()`:
 
 ```js
-import { verifyAuthResponse, unpackPublicKeyJSON } from "..";
+import { verifyAuthResponse, unpackPublicKeyJSON } from "...";
 
 var packedPublicKey = ... // result from previous packPublicKeyJSON()
 
