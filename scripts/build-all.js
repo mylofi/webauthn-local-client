@@ -12,7 +12,6 @@ var terser = require("terser");
 
 const PKG_ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
-const BUNDLERS_SODIUM_HEADER = path.join(SRC_DIR,"bundlers-sodium-header.txt");
 const MAIN_COPYRIGHT_HEADER = path.join(SRC_DIR,"copyright-header.txt");
 const NODE_MODULES_DIR = path.join(PKG_ROOT_DIR,"node_modules");
 const ASN1_SRC = path.join(NODE_MODULES_DIR,"@yoursunny","asn1","dist","asn1.all.min.js");
@@ -74,11 +73,9 @@ async function main() {
 	);
 
 	var [
-		bundlersSodiumHeader,
 		bundlersIndexContents,
 		asn1Contents,
 	] = await Promise.all([
-		fsp.readFile(BUNDLERS_SODIUM_HEADER,{ encoding: "utf8", }),
 		fsp.readFile(DIST_INDEX_FILE,{ encoding: "utf8", }),
 		fsp.readFile(ASN1_SRC,{ encoding: "utf8", }),
 	]);
@@ -92,10 +89,6 @@ async function main() {
 			// remove reference to importing the "external.js" module
 			// since bundlers handle the dependencies
 			.replace(/import ?".\/external.js";?/,"")
-
-			// insert bundlers-sodium-header after the closing */ of the
-			// copyright block comment
-			.replace(/^(\*\/[\s\r\n]+)/m,`$1${bundlersSodiumHeader}\n`)
 	);
 
 	// prepend MPL2-required copyright header

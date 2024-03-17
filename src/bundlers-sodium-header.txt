@@ -1,3 +1,0 @@
-// ensure libsodium has fully loaded
-import _sodium from "./external/libsodium-wrappers.js";
-await _sodium.ready;
