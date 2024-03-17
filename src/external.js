@@ -10,6 +10,7 @@ await loadScript(import.meta.resolve(`./external/libsodium-wrappers.js`));
 // ********************************
 
 function loadScript(filepath) {
+	if (typeof document == "undefined") return;
 	var loadComplete = null;
 	var pr = new Promise(res => loadComplete = res);
 	var script = document.createElement("script");
