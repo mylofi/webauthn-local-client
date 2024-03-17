@@ -1,4 +1,6 @@
-// load external dependencies (comment this line out if using a bundler)
+// load external dependencies (non-bundlers only)
+// NOTE: this `import` is removed from "bundlers.index.js",
+//       for use with bundlers
 import "./external.js";
 
 

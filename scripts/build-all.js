@@ -12,6 +12,7 @@ var terser = require("terser");
 
 const PKG_ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
+const BUNDLERS_SODIUM_HEADER = path.join(SRC_DIR,"bundlers-sodium-header.txt");
 const MAIN_COPYRIGHT_HEADER = path.join(SRC_DIR,"copyright-header.txt");
 const NODE_MODULES_DIR = path.join(PKG_ROOT_DIR,"node_modules");
 const ASN1_SRC = path.join(NODE_MODULES_DIR,"@yoursunny","asn1","dist","asn1.all.min.js");
@@ -20,6 +21,7 @@ const CBOR_SRC = path.join(NODE_MODULES_DIR,"cbor-js","cbor.js");
 const LIBSODIUM_SRC = path.join(NODE_MODULES_DIR,"libsodium","dist","modules","libsodium.js");
 const LIBSODIUM_WRAPPERS_SRC = path.join(NODE_MODULES_DIR,"libsodium-wrappers","dist","modules","libsodium-wrappers.js");
 const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
+const DIST_INDEX_FILE = path.join(DIST_DIR,"index.js");
 const DIST_EXTERNAL_DIR = path.join(DIST_DIR,"external");
 
 
@@ -71,25 +73,45 @@ async function main() {
 		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
 	);
 
-	var indexContents = await fsp.readFile(path.join(DIST_DIR,"index.js"),{ encoding: "utf8", });
-	var asn1Contents = await fsp.readFile(ASN1_SRC,{ encoding: "utf8", });
+	var [
+		bundlersSodiumHeader,
+		bundlersIndexContents,
+		asn1Contents,
+	] = await Promise.all([
+		fsp.readFile(BUNDLERS_SODIUM_HEADER,{ encoding: "utf8", }),
+		fsp.readFile(DIST_INDEX_FILE,{ encoding: "utf8", }),
+		fsp.readFile(ASN1_SRC,{ encoding: "utf8", }),
+	]);
+
+	// prepare bundler.index.js
+	bundlersIndexContents = (
+		bundlersIndexContents
+			// update the filename in the copyright header
+			.replace(/(WebAuthn-Local-Client: )(index.js)/,"$1bundlers.$2")
+
+			// remove reference to importing the "external.js" module
+			// since bundlers handle the dependencies
+			.replace(/import ?".\/external.js";?/,"")
+
+			// insert bundlers-sodium-header after the closing */ of the
+			// copyright block comment
+			.replace(/^(\*\/[\s\r\n]+)/m,`$1${bundlersSodiumHeader}\n`)
+	);
+
+	// prepend MPL2-required copyright header
+	asn1Contents = `${asn1CopyrightHeader}\n${asn1Contents}`;
 
 	await Promise.all([
-		// build only.index.js (for bundlers)
+		// build bundlers.index.js (for bundlers)
 		fsp.writeFile(
-			path.join(DIST_DIR,"only.index.js"),
-			(
-				indexContents
-					.replace(/(WebAuthn-Local-Client: )(index.js)/,"$1only.$2")
-					.replace(/import ?".\/external.js";?/,"")
-			),
+			path.join(DIST_DIR,`bundlers.${path.basename(DIST_INDEX_FILE)}`),
+			bundlersIndexContents,
 			{ encoding: "utf8", }
 		),
 		// add ASN1's license-required copyright header
 		fsp.writeFile(
 			path.join(DIST_EXTERNAL_DIR,path.basename(ASN1_SRC)),
-			// append MPL2-required copyright header
-			`${asn1CopyrightHeader}\n${asn1Contents}`,
+			asn1Contents,
 			{ encoding: "utf8", }
 		),
 		fsp.copyFile(

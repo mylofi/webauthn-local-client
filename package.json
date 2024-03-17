@@ -2,11 +2,14 @@
 	"name": "webauthn-local-client",
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
-	"main": "./dist/only.index.js",
-	"exports": "./dist/only.index.js",
+	"exports": {
+		".": {
+			"browser": "./dist/bundlers.index.js"
+		}
+	},
 	"browser": {
-		"webauthn-local-client": "./dist/only.index.js",
-		"./index.js": "./dist/only.index.js",
+		"webauthn-local-client": "./dist/bundlers.index.js",
+		"./index.js": "./dist/bundlers.index.js",
 		"./external.js": false,
 		"./external/libsodium.js": "./dist/external/libsodium.js",
 		"./external/libsodium-wrappers.js": "./dist/external/libsodium-wrappers.js",

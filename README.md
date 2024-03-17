@@ -21,7 +21,7 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) includes a `dist/` directory with all files you need to deploy **webauthn-local-client** (and its dependencies) into your application/project.
 
-But if you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
+If you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
 
 ### WITH a bundler
 
@@ -29,36 +29,53 @@ If your project uses a bundler tool (webpack, vite, rollup, etc), you should be 
 
 The files needed for bundling/deployment are:
 
-* `dist/only.index.js` (not `dist/index.js` or `dist/external.js`; these are only intended [for application projects WITHOUT a bundler](#without-a-bundler))
-* `dist/external/libsodium.js`
-* `dist/external/libsodium-wrappers.js`
-* `dist/external/cbor.js`
-* `dist/external/asn1.all.min.js`
+* `dist/bundlers.index.js`
 
-**Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment when bundling the file.
+    **Note:** not `dist/index.js` or `dist/external.js`; these are only intended [for application projects WITHOUT a bundler](#without-a-bundler)
+
+* `dist/external/*`:
+    - `libsodium.js`
+    - `libsodium-wrappers.js`
+    - `cbor.js`
+    - `asn1.all.min.js`
+
+**Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment when bundling the file.
+
+#### Import/Usage
+
+To import and use the library in a **bundled** browser app:
+
+```js
+import { register, auth } from "webauthn-local-client";
+```
 
 ### WITHOUT a bundler
 
 To use this library directly -- i.e., in a classic/vanilla web project without a modern bundler tool -- make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets folder, and copy over all files from `dist/` into that location:
 
-* `dist/index.js` (not `dist/only.index.js`, which is only intended [for application projects WITH a bundler](#with-a-bundler))
+* `dist/index.js`
+
+    **Note:** not `dist/bundlers.index.js`, which is only intended [for application projects WITH a bundler](#with-a-bundler)
+
 * `dist/external.js`
-* `dist/external/libsodium.js`
-* `dist/external/libsodium-wrappers.js`
-* `dist/external/cbor.js`
-* `dist/external/asn1.all.min.js`
 
-## Import/Usage
+* `dist/external/*`:
+    - `libsodium.js`
+    - `libsodium-wrappers.js`
+    - `cbor.js`
+    - `asn1.all.min.js`
 
-To import and use the library in a browser app:
+#### Import/Usage
+
+To import and use the library in a **non-bundled** browser app:
 
 ```js
 import { register, auth } from "/path/to/webauthn-local-client/index.js";
 ```
 
-### Using Import Map
+#### Using Import Map
 
-If your browser app has an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), you can and an entry for this library:
+If your **non-bundled** browser app has an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), you can and an entry for this library:
 
 ```html
 <script type="importmap">
