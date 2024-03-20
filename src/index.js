@@ -356,7 +356,12 @@ async function auth(authOptions = authDefaults()) {
 							[ "flags", "signCount", "userPresence", "userVerification", ].includes(key)
 						))
 					)),
-					...(authResult.response.userHandle != null ? { userID: authResult.response.userHandle, } : null),
+					...(
+						authResult.response.userHandle != null ?
+							{ userID: new Uint8Array(authResult.response.userHandle), } :
+
+							null
+					),
 					raw: authResult.response,
 				},
 			};
