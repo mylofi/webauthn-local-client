@@ -12,7 +12,6 @@ const publicKeyAlgorithms = [
 	{
 		name: "Ed25519",
 		COSEID: -8,
-		OID: "2b6570",
 		// note: Ed25519 is in draft, but not yet supported
 		// by subtle-crypto
 		//    https://wicg.github.io/webcrypto-secure-curves/
@@ -29,7 +28,6 @@ const publicKeyAlgorithms = [
 	{
 		name: "ES256",
 		COSEID: -7,
-		OID: "2a8648ce3d0201",
 		cipherOpts: {
 			name: "ECDSA",
 			namedCurve: "P-256",
@@ -42,7 +40,6 @@ const publicKeyAlgorithms = [
 	{
 		name: "RSASSA-PSS",
 		COSEID: -37,
-		OID: "2a864886f70d01010a",
 		cipherOpts: {
 			name: "RSA-PSS",
 			hash: { name: "SHA-256", },
@@ -54,7 +51,6 @@ const publicKeyAlgorithms = [
 	{
 		name: "RS256",
 		COSEID: -257,
-		OID: "2a864886f70d010101",
 		cipherOpts: {
 			name: "RSASSA-PKCS1-v1_5",
 			hash: { name: "SHA-256", },
@@ -68,9 +64,6 @@ const publicKeyAlgorithmsLookup = Object.fromEntries(
 
 		// by COSEID
 		[ entry.COSEID, entry, ],
-
-		// by OID
-		[ entry.OID, entry, ],
 	])
 );
 const credentialTypeKey = Symbol("credential-type");
@@ -424,7 +417,6 @@ async function verifyAuthResponse(
 	} = {},
 	/*publicKey*/{
 		algoCOSE: publicKeyAlgoCOSE,
-		algoOID: publicKeyAlgoOID,
 		spki: publicKeySPKI,
 		raw: publicKeyRaw,
 	} = {}
@@ -433,38 +425,35 @@ async function verifyAuthResponse(
 		// all necessary inputs?
 		if (
 			signature && clientDataRaw && authDataRaw && publicKeySPKI && publicKeyRaw &&
-			Number.isInteger(publicKeyAlgoCOSE) &&
-			typeof publicKeyAlgoOID == "string"
+			Number.isInteger(publicKeyAlgoCOSE)
 		) {
-			let verificationSig = parseSignature(publicKeyAlgoCOSE,publicKeyAlgoOID,signature);
+			let verificationSig = parseSignature(publicKeyAlgoCOSE,signature);
 			let verificationData = await computeVerificationData(authDataRaw,clientDataRaw);
 			let status = await (
 				// Ed25519?
-				isPublicKeyAlgorithm("Ed25519",publicKeyAlgoCOSE,publicKeyAlgoOID) ?
+				isPublicKeyAlgorithm("Ed25519",publicKeyAlgoCOSE) ?
 					// verification needs sodium (not subtle-crypto)
 					verifySignatureSodium(
 						publicKeyRaw,
 						publicKeyAlgoCOSE,
-						publicKeyAlgoOID,
 						verificationSig,
 						verificationData
 					) :
 
 				(
 					// ECDSA (P-256)?
-					isPublicKeyAlgorithm("ES256",publicKeyAlgoCOSE,publicKeyAlgoOID) ||
+					isPublicKeyAlgorithm("ES256",publicKeyAlgoCOSE) ||
 
 					// RSASSA-PKCS1-v1_5?
-					isPublicKeyAlgorithm("RS256",publicKeyAlgoCOSE,publicKeyAlgoOID) ||
+					isPublicKeyAlgorithm("RS256",publicKeyAlgoCOSE) ||
 
 					// RSASSA-PSS
-					isPublicKeyAlgorithm("RSASSA-PSS",publicKeyAlgoCOSE,publicKeyAlgoOID)
+					isPublicKeyAlgorithm("RSASSA-PSS",publicKeyAlgoCOSE)
 				) ?
 					// verification supported by subtle-crypto
 					verifySignatureSubtle(
 						publicKeySPKI,
 						publicKeyAlgoCOSE,
-						publicKeyAlgoOID,
 						verificationSig,
 						verificationData
 					) :
@@ -485,11 +474,11 @@ async function verifyAuthResponse(
 	}
 }
 
-async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,data) {
+async function verifySignatureSubtle(publicKeySPKI,algoCOSE,signature,data) {
 	if (
-		isPublicKeyAlgorithm("ES256",algoCOSE,algoOID) ||
-		isPublicKeyAlgorithm("RSASSA-PSS",algoCOSE,algoOID) ||
-		isPublicKeyAlgorithm("RS256",algoCOSE,algoOID)
+		isPublicKeyAlgorithm("ES256",algoCOSE) ||
+		isPublicKeyAlgorithm("RSASSA-PSS",algoCOSE) ||
+		isPublicKeyAlgorithm("RS256",algoCOSE)
 	) {
 		try {
 			let pubKeySubtle = await crypto.subtle.importKey(
@@ -515,8 +504,8 @@ async function verifySignatureSubtle(publicKeySPKI,algoCOSE,algoOID,signature,da
 	throw new Error("Unrecognized signature for subtle-crypto verification");
 }
 
-function verifySignatureSodium(publicKeyRaw,algoCOSE,algoOID,signature,data) {
-	if (isPublicKeyAlgorithm("Ed25519",algoCOSE,algoOID)) {
+function verifySignatureSodium(publicKeyRaw,algoCOSE,signature,data) {
+	if (isPublicKeyAlgorithm("Ed25519",algoCOSE)) {
 		try {
 			return sodium.crypto_sign_verify_detached(signature,data,publicKeyRaw);
 		}
@@ -597,8 +586,8 @@ async function checkRPID(rpIDHash,origRPID) {
 	);
 }
 
-function parseSignature(algoCOSE,algoOID,signature) {
-	if (isPublicKeyAlgorithm("ES256",algoCOSE,algoOID)) {
+function parseSignature(algoCOSE,signature) {
+	if (isPublicKeyAlgorithm("ES256",algoCOSE)) {
 		// this algorithm's signature comes back ASN.1 encoded, per spec:
 		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
 		let der = ASN1.parseVerbose(signature);
@@ -629,10 +618,9 @@ async function computeSHA256Hash(val) {
 	);
 }
 
-function isPublicKeyAlgorithm(algoName,COSEID,OID) {
+function isPublicKeyAlgorithm(algoName,COSEID) {
 	return (
-		publicKeyAlgorithmsLookup[algoName] == publicKeyAlgorithmsLookup[COSEID] &&
-		publicKeyAlgorithmsLookup[COSEID] == publicKeyAlgorithmsLookup[OID]
+		publicKeyAlgorithmsLookup[algoName] == publicKeyAlgorithmsLookup[COSEID]
 	);
 }
 
