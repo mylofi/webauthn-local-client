@@ -10,5 +10,5 @@ const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
 const TEST_DIR = path.join(PKG_ROOT_DIR,"test");
 
 try { fs.symlinkSync(path.join("..","src"),path.join(TEST_DIR,"src"),"dir"); } catch (err) {}
-try { fs.symlinkSync(path.join("..","dist"),path.join(TEST_DIR,"dist"),"dir"); } catch (err) {}
-try { fs.symlinkSync(path.join("..","dist","external"),path.join(SRC_DIR,"external"),"dir"); } catch (err) {}
+try { fs.symlinkSync(path.join("..","dist","auto"),path.join(TEST_DIR,"dist"),"dir"); } catch (err) {}
+try { fs.symlinkSync(path.join("..","dist","auto","external"),path.join(SRC_DIR,"external"),"dir"); } catch (err) {}
