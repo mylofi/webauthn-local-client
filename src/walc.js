@@ -1,6 +1,6 @@
-// load external dependencies (non-bundlers only)
-// NOTE: this `import` is removed from "bundlers.index.js",
-//       for use with bundlers
+// dynamically load external dependencies (non-bundlers only)
+// NOTE: this `import` is removed from "bundlers/walc.js",
+//       which is used with bundlers
 import "./external.js";
 
 

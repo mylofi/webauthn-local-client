@@ -13,15 +13,26 @@ var terser = require("terser");
 const PKG_ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
 const MAIN_COPYRIGHT_HEADER = path.join(SRC_DIR,"copyright-header.txt");
+const BUNDLERS_IMPORTS = path.join(SRC_DIR,"bundlers-imports.txt");
 const NODE_MODULES_DIR = path.join(PKG_ROOT_DIR,"node_modules");
 const ASN1_SRC = path.join(NODE_MODULES_DIR,"@yoursunny","asn1","dist","asn1.all.min.js");
 const ASN1_COPYRIGHT_HEADER = path.join(__dirname,"asn1-copyright-header.txt");
 const CBOR_SRC = path.join(NODE_MODULES_DIR,"cbor-js","cbor.js");
 const LIBSODIUM_SRC = path.join(NODE_MODULES_DIR,"libsodium","dist","modules","libsodium.js");
 const LIBSODIUM_WRAPPERS_SRC = path.join(NODE_MODULES_DIR,"libsodium-wrappers","dist","modules","libsodium-wrappers.js");
+
 const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
-const DIST_INDEX_FILE = path.join(DIST_DIR,"index.js");
-const DIST_EXTERNAL_DIR = path.join(DIST_DIR,"external");
+const DIST_AUTO_DIR = path.join(DIST_DIR,"auto");
+const DIST_BUNDLERS_DIR = path.join(DIST_DIR,"bundlers");
+const DIST_AUTO_WALC_FILE = path.join(DIST_AUTO_DIR,"walc.js");
+const DIST_AUTO_EXTERNAL_DIR = path.join(DIST_AUTO_DIR,"external");
+const DIST_AUTO_EXTERNAL_ASN1 = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(ASN1_SRC));
+const DIST_AUTO_EXTERNAL_CBOR = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(CBOR_SRC));
+const DIST_AUTO_EXTERNAL_LIBSODIUM = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_SRC));
+const DIST_AUTO_EXTERNAL_LIBSODIUM_WRAPPERS = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_WRAPPERS_SRC));
+
+const DIST_BUNDLERS_WALC_FILE = path.join(DIST_BUNDLERS_DIR,path.basename(DIST_AUTO_WALC_FILE));
+const DIST_BUNDLERS_WALC_EXTERNAL_BUNDLE_FILE = path.join(DIST_BUNDLERS_DIR,"walc-external-bundle.js");
 
 
 main().catch(console.error);
@@ -32,21 +43,15 @@ main().catch(console.error);
 async function main() {
 	console.log("*** Building JS ***");
 
-	// try to make the dist/ and dist/external/ directories, if needed
-	if (!(await safeMkdir(DIST_DIR))) {
-		throw new Error(`Target directory (${DIST_DIR}) does not exist and could not be created.`);
-	}
-	if (!(await safeMkdir(DIST_EXTERNAL_DIR))) {
-		throw new Error(`Target directory (${DIST_EXTERNAL_DIR}) does not exist and could not be created.`);
+	// try to make various dist/ directories, if needed
+	for (let dir of [ DIST_DIR, DIST_AUTO_DIR, DIST_BUNDLERS_DIR, DIST_AUTO_EXTERNAL_DIR, ]) {
+		if (!(await safeMkdir(dir))) {
+			throw new Error(`Target directory (${dir}) does not exist and could not be created.`);
+		}
 	}
 
 	// read package.json
-	var packageJSON = JSON.parse(
-		await fsp.readFile(
-			path.join(PKG_ROOT_DIR,"package.json"),
-			{ encoding: "utf8", }
-		)
-	);
+	var packageJSON = require(path.join(PKG_ROOT_DIR,"package.json"));
 	// read version number from package.json
 	var version = packageJSON.version;
 	var [ mainCopyrightHeader, asn1CopyrightHeader, ] = await Promise.all([
@@ -63,28 +68,34 @@ async function main() {
 			.replace(/#YEAR#/g,(new Date()).getFullYear())
 	);
 
-	// copy src/* files
-	await copyFilesTo(
+	// build src/* files in dist/auto/
+	await buildFiles(
 		recursiveReadDir(SRC_DIR),
 		SRC_DIR,
-		DIST_DIR,
+		DIST_AUTO_DIR,
 		mainCopyrightHeader,
 		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
 	);
 
 	var [
-		bundlersIndexContents,
+		walcLibContents,
 		asn1Contents,
+		cborContents,
+		libsodiumContents,
+		libsodiumWrappersContents,
 	] = await Promise.all([
-		fsp.readFile(DIST_INDEX_FILE,{ encoding: "utf8", }),
+		fsp.readFile(DIST_AUTO_WALC_FILE,{ encoding: "utf8", }),
 		fsp.readFile(ASN1_SRC,{ encoding: "utf8", }),
+		fsp.readFile(CBOR_SRC,{ encoding: "utf8", }),
+		fsp.readFile(LIBSODIUM_SRC,{ encoding: "utf8", }),
+		fsp.readFile(LIBSODIUM_WRAPPERS_SRC,{ encoding: "utf8", }),
 	]);
 
 	// prepare bundler.index.js
-	bundlersIndexContents = (
-		bundlersIndexContents
+	walcLibContents = (
+		walcLibContents
 			// update the filename in the copyright header
-			.replace(/(WebAuthn-Local-Client: )(index.js)/,"$1bundlers.$2")
+			.replace(/(WebAuthn-Local-Client: )(walc\.js)/,"$1bundlers/$2")
 
 			// remove reference to importing the "external.js" module
 			// since bundlers handle the dependencies
@@ -92,39 +103,56 @@ async function main() {
 	);
 
 	// prepend MPL2-required copyright header
-	asn1Contents = `${asn1CopyrightHeader}\n${asn1Contents}`;
+	asn1Contents = `${asn1CopyrightHeader}${asn1Contents}`;
+
+	// build walc-external-bundle.js
+	var walcExternalBundleContents = [
+		`/*! ${path.basename(ASN1_SRC)} */`, asn1Contents.trim(),
+		`/*! ${path.basename(CBOR_SRC)} */`, await minifyJS(cborContents),
+		`/*! ${path.basename(LIBSODIUM_SRC)} */`, libsodiumContents.trim(),
+		`/*! ${path.basename(LIBSODIUM_WRAPPERS_SRC)} */`, libsodiumWrappersContents.trim(),
+	].join("\n");
 
 	await Promise.all([
-		// build bundlers.index.js (for bundlers)
+		// bundlers/walc.js (for bundlers)
 		fsp.writeFile(
-			path.join(DIST_DIR,`bundlers.${path.basename(DIST_INDEX_FILE)}`),
-			bundlersIndexContents,
+			DIST_BUNDLERS_WALC_FILE,
+			walcLibContents,
+			{ encoding: "utf8", }
+		),
+		// bundlers/walc-external-bundle.js (for bundlers)
+		fsp.writeFile(
+			DIST_BUNDLERS_WALC_EXTERNAL_BUNDLE_FILE,
+			walcExternalBundleContents,
 			{ encoding: "utf8", }
 		),
 		// add ASN1's license-required copyright header
 		fsp.writeFile(
-			path.join(DIST_EXTERNAL_DIR,path.basename(ASN1_SRC)),
+			DIST_AUTO_EXTERNAL_ASN1,
 			asn1Contents,
 			{ encoding: "utf8", }
 		),
-		fsp.copyFile(
-			CBOR_SRC,
-			path.join(DIST_EXTERNAL_DIR,path.basename(CBOR_SRC))
+		fsp.writeFile(
+			DIST_AUTO_EXTERNAL_CBOR,
+			cborContents,
+			{ encoding: "utf8", }
 		),
-		fsp.copyFile(
-			LIBSODIUM_SRC,
-			path.join(DIST_EXTERNAL_DIR,path.basename(LIBSODIUM_SRC))
+		fsp.writeFile(
+			DIST_AUTO_EXTERNAL_LIBSODIUM,
+			libsodiumContents,
+			{ encoding: "utf8", }
 		),
-		fsp.copyFile(
-			LIBSODIUM_WRAPPERS_SRC,
-			path.join(DIST_EXTERNAL_DIR,path.basename(LIBSODIUM_WRAPPERS_SRC))
+		fsp.writeFile(
+			DIST_AUTO_EXTERNAL_LIBSODIUM_WRAPPERS,
+			libsodiumWrappersContents,
+			{ encoding: "utf8", }
 		),
 	]);
 
 	console.log("Complete.");
 }
 
-async function copyFilesTo(files,fromBasePath,toDir,copyrightHeader,skipPatterns) {
+async function buildFiles(files,fromBasePath,toDir,copyrightHeader,skipPatterns) {
 	for (let fromPath of files) {
 		// should we skip copying this file?
 		if (matchesSkipPattern(fromPath,skipPatterns)) {

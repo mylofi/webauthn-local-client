@@ -3,18 +3,27 @@
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
 	"exports": {
-		".": {
-			"browser": "./dist/bundlers.index.js"
-		}
+		".": "./dist/bundlers/walc.js",
+		"./bundlers/walc.js": "./dist/bundlers/walc.js",
+		"./bundlers/walc-external-bundle.js": "./dist/bundlers/walc-external-bundle.js",
+		"./bundlers/vite": "./bundler-plugins/vite.mjs",
+		"./bundlers/webpack": "./bundler-plugins/webpack.mjs",
+
+		"./auto/external/asn1.all.min.js": "./dist/auto/external/asn1.all.min.js",
+		"./auto/external/cbor.js": "./dist/auto/external/cbor.js",
+		"./auto/external/libsodium.js": "./dist/auto/external/libsodium.js",
+		"./auto/external/libsodium-wrappers.js": "./dist/auto/external/libsodium-wrappers.js"
 	},
 	"browser": {
-		"webauthn-local-client": "./dist/bundlers.index.js",
-		"./index.js": "./dist/bundlers.index.js",
-		"./external.js": false,
-		"./external/libsodium.js": "./dist/external/libsodium.js",
-		"./external/libsodium-wrappers.js": "./dist/external/libsodium-wrappers.js",
-		"./external/cbor.js": "./dist/external/cbor.js",
-		"./external/asn1.all.min.js": "./dist/external/asn1.all.min.js"
+		"webauthn-local-client": "./dist/bundlers.walc.js",
+		"./bundlers/walc.js": "./dist/bundlers/walc.js",
+		"./bundlers/walc-external-bundle.js": "./dist/bundlers/walc-external-bundle.js",
+
+		"./auto/external.js": false,
+		"./auto/external/libsodium.js": "./dist/external/libsodium.js",
+		"./auto/external/libsodium-wrappers.js": "./dist/external/libsodium-wrappers.js",
+		"./auto/external/cbor.js": "./dist/external/cbor.js",
+		"./auto/external/asn1.all.min.js": "./dist/external/asn1.all.min.js"
 	},
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
@@ -35,13 +44,23 @@
 		"recursive-readdir-sync": "~1.0.6",
 		"terser": "~5.29.2"
 	},
+	"peerDependencies": {
+		"html-webpack-plugin": "~5.6.0"
+	},
+	"peerDependenciesMeta": {
+		"html-webpack-plugin": {
+			"optional": true
+		}
+	},
 	"repository": "mylofi/webauthn-local-client",
 	"keywords": [
 		"auth",
 		"passkey",
 		"webauthn",
 		"biometric",
-		"cryptography"
+		"cryptography",
+		"vite-plugin",
+		"webpack-plugin"
 	],
 	"bugs": {
 		"url": "https://github.com/mylofi/webauthn-local-client/issues",

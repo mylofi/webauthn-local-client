@@ -17,83 +17,17 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 **Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn) or [this one](https://github.com/raohwork/webauthn-client).
 
-## Deployment
+## Deployment / Import
 
 The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) includes a `dist/` directory with all files you need to deploy **webauthn-local-client** (and its dependencies) into your application/project.
 
 If you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
 
-### WITH a bundler
+* **USING A WEB BUNDLER?** (vite, webpack, etc) Use the `dist/bundlers/*` files and see [Bundler Deployment][BUNDLERS.md] for instructions.
 
-If your project uses a bundler tool (webpack, vite, rollup, etc), you should be able bundle this library (along with its dependencies) without changes, via the various entries in the `./package.json` -- namely the `main`, `exports`, and `browser` fields.
+* Otherwise, use the `dist/auto/*` files and see [Non-Bundler Deployment][NON-BUNDLERS.md] for instructions.
 
-The files needed for bundling/deployment are:
-
-* `dist/bundlers.index.js`
-
-    **Note:** not `dist/index.js` or `dist/external.js`; these are only intended [for application projects WITHOUT a bundler](#without-a-bundler)
-
-* `dist/external/*`:
-    - `libsodium.js`
-    - `libsodium-wrappers.js`
-    - `cbor.js`
-    - `asn1.all.min.js`
-
-**Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment when bundling the file.
-
-#### Import/Usage
-
-To import and use the library in a **bundled** browser app:
-
-```js
-import { register, auth } from "webauthn-local-client";
-```
-
-### WITHOUT a bundler
-
-To use this library directly -- i.e., in a classic/vanilla web project without a modern bundler tool -- make a directory (e.g. `webauthn-local-client/`) in your browser app's JS assets folder, and copy over all files from `dist/` into that location:
-
-* `dist/index.js`
-
-    **Note:** not `dist/bundlers.index.js`, which is only intended [for application projects WITH a bundler](#with-a-bundler)
-
-* `dist/external.js`
-
-* `dist/external/*`:
-    - `libsodium.js`
-    - `libsodium-wrappers.js`
-    - `cbor.js`
-    - `asn1.all.min.js`
-
-#### Import/Usage
-
-To import and use the library in a **non-bundled** browser app:
-
-```js
-import { register, auth } from "/path/to/webauthn-local-client/index.js";
-```
-
-#### Using Import Map
-
-If your **non-bundled** browser app has an [Import Map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap), you can and an entry for this library:
-
-```html
-<script type="importmap">
-{
-    "imports": {
-        "webauthn-local-client": "/path/to/webauthn-local-client/index.js"
-    }
-}
-</script>
-```
-
-Then you'll be able to `import` the library in a more friendly/readable way:
-
-```js
-import { register, auth } from "webauthn-local-client";
-```
-
-### Supported?
+## `WebAuthn` Supported?
 
 To check if `WebAuthn` API and functionality is supported on the device:
 
