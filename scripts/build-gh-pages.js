@@ -10,7 +10,7 @@ var micromatch = require("micromatch");
 var recursiveReadDir = require("recursive-readdir-sync");
 
 const PKG_ROOT_DIR = path.join(__dirname,"..");
-const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
+const DIST_DIR = path.join(PKG_ROOT_DIR,"dist","auto");
 const TEST_DIR = path.join(PKG_ROOT_DIR,"test");
 const BUILD_DIR = path.join(PKG_ROOT_DIR,".gh-build");
 const BUILD_DIST_DIR = path.join(BUILD_DIR,"dist");
