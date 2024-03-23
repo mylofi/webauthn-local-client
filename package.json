@@ -15,7 +15,7 @@
 		"./auto/external/libsodium-wrappers.js": "./dist/auto/external/libsodium-wrappers.js"
 	},
 	"browser": {
-		"webauthn-local-client": "./dist/bundlers.walc.js",
+		"webauthn-local-client": "./dist/bundlers/walc.js",
 		"./bundlers/walc.js": "./dist/bundlers/walc.js",
 		"./bundlers/walc-external-bundle.js": "./dist/bundlers/walc-external-bundle.js",
 
