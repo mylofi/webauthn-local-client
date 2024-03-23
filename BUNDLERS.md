@@ -49,9 +49,9 @@ export default defineConfig({
 });
 ```
 
-This plugin works for both the `vite dev` (dev-server) mode and the `vite build` mode. In both cases, it copies the `dist/bundlers/walc-external-bundle.js` file into the `public/` directory of your project root. It also injects a `<script src=..></script>` tag (to load `walc-external-bundle.js`) into the markup of the `index.html` file that vite produces for your app.
+This plugin works for both the `vite dev` (dev-server) mode and the `vite build` mode. In both cases, it copies the `dist/bundlers/walc-external-bundle.js` file into the `public/` directory of your project root. It also injects a `<script src="walc-external-bundle.js"></script>` tag into the markup of the `index.html` file that vite produces for your app.
 
-**Note:** At present, this plugin is not configurable in any way (e.g., calling `WALC()` above with no arguments) . If something about its behavior is not compatible with your vite project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/vite.mjs` plugin and make necessary changes.
+**Note:** At present, this plugin is not configurable in any way (i.e., calling `WALC()` above with no arguments). If something about its behavior is not compatible with your vite project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/vite.mjs` plugin and make necessary changes.
 
 ### Webpack Plugin
 
@@ -81,9 +81,9 @@ export default {
 };
 ```
 
-This plugin copies the `dist/bundlers/walc-external-bundle.js` file into the build root (default `dist/`), along with the other bundled files. It also injects a `<script src=..></script>` tag (to load `walc-external-bundle.js`) into the markup of the `index.html` file (and any other HTML files) that webpack produces for your app.
+This plugin copies the `dist/bundlers/walc-external-bundle.js` file into the build root (default `dist/`), along with the other bundled files. It also injects a `<script src="walc-external-bundle.js"></script>` tag into the markup of the `index.html` file (and any other HTML files) that webpack produces for your app.
 
-**Note:** At present, this plugin is not configurable in any way (e.g., calling `WALC()` above with no arguments). If something about its behavior is not compatible with your webpack project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/webpack.mjs` plugin and make necessary changes.
+**Note:** At present, this plugin is not configurable in any way (i.e., calling `WALC()` above with no arguments). If something about its behavior is not compatible with your webpack project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/webpack.mjs` plugin and make necessary changes.
 
 ## Import/Usage
 
