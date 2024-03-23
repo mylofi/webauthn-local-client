@@ -23,9 +23,9 @@ The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-l
 
 If you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
 
-* **USING A WEB BUNDLER?** (vite, webpack, etc) Use the `dist/bundlers/*` files and see [Bundler Deployment][BUNDLERS.md] for instructions.
+* **USING A WEB BUNDLER?** (vite, webpack, etc) Use the `dist/bundlers/*` files and see [Bundler Deployment](BUNDLERS.md) for instructions.
 
-* Otherwise, use the `dist/auto/*` files and see [Non-Bundler Deployment][NON-BUNDLERS.md] for instructions.
+* Otherwise, use the `dist/auto/*` files and see [Non-Bundler Deployment](NON-BUNDLERS.md) for instructions.
 
 ## `WebAuthn` Supported?
 
