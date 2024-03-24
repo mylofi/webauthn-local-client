@@ -13,6 +13,7 @@ var terser = require("terser");
 const PKG_ROOT_DIR = path.join(__dirname,"..");
 const SRC_DIR = path.join(PKG_ROOT_DIR,"src");
 const MAIN_COPYRIGHT_HEADER = path.join(SRC_DIR,"copyright-header.txt");
+const WALC_SRC = path.join(SRC_DIR,"walc.js");
 const NODE_MODULES_DIR = path.join(PKG_ROOT_DIR,"node_modules");
 const ASN1_SRC = path.join(NODE_MODULES_DIR,"@yoursunny","asn1","dist","asn1.all.min.js");
 const ASN1_COPYRIGHT_HEADER = path.join(__dirname,"asn1-copyright-header.txt");
@@ -22,15 +23,12 @@ const LIBSODIUM_WRAPPERS_SRC = path.join(NODE_MODULES_DIR,"libsodium-wrappers","
 
 const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
 const DIST_AUTO_DIR = path.join(DIST_DIR,"auto");
-const DIST_BUNDLERS_DIR = path.join(DIST_DIR,"bundlers");
-const DIST_AUTO_WALC_FILE = path.join(DIST_AUTO_DIR,"walc.js");
 const DIST_AUTO_EXTERNAL_DIR = path.join(DIST_AUTO_DIR,"external");
 const DIST_AUTO_EXTERNAL_ASN1 = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(ASN1_SRC));
 const DIST_AUTO_EXTERNAL_CBOR = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(CBOR_SRC));
 const DIST_AUTO_EXTERNAL_LIBSODIUM = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_SRC));
 const DIST_AUTO_EXTERNAL_LIBSODIUM_WRAPPERS = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_WRAPPERS_SRC));
-
-const DIST_BUNDLERS_WALC_FILE = path.join(DIST_BUNDLERS_DIR,path.basename(DIST_AUTO_WALC_FILE));
+const DIST_BUNDLERS_DIR = path.join(DIST_DIR,"bundlers");
 const DIST_BUNDLERS_WALC_EXTERNAL_BUNDLE_FILE = path.join(DIST_BUNDLERS_DIR,"walc-external-bundle.js");
 
 
@@ -72,34 +70,39 @@ async function main() {
 		recursiveReadDir(SRC_DIR),
 		SRC_DIR,
 		DIST_AUTO_DIR,
-		mainCopyrightHeader,
+		prepareFileContents,
 		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
 	);
 
+	// build src/walc.js to bundlers/walc.js
+	await buildFiles(
+		[ WALC_SRC, ],
+		SRC_DIR,
+		DIST_BUNDLERS_DIR,
+		(contents,filename) => prepareFileContents(
+			// alter (remove) "external.js" dependencies-import
+			// since bundlers handle dependencies differently
+			contents.replace(
+				/import[^\r\n]*".\/external.js";?/,
+				""
+			),
+			`bundlers/${filename}`
+		),
+		/*skipPatterns=*/[ "**/*.txt", "**/*.json", "**/external" ]
+	);
+
+	// handle dependencies
 	var [
-		walcLibContents,
 		asn1Contents,
 		cborContents,
 		libsodiumContents,
 		libsodiumWrappersContents,
 	] = await Promise.all([
-		fsp.readFile(DIST_AUTO_WALC_FILE,{ encoding: "utf8", }),
 		fsp.readFile(ASN1_SRC,{ encoding: "utf8", }),
 		fsp.readFile(CBOR_SRC,{ encoding: "utf8", }),
 		fsp.readFile(LIBSODIUM_SRC,{ encoding: "utf8", }),
 		fsp.readFile(LIBSODIUM_WRAPPERS_SRC,{ encoding: "utf8", }),
 	]);
-
-	// prepare bundler.index.js
-	walcLibContents = (
-		walcLibContents
-			// update the filename in the copyright header
-			.replace(/(WebAuthn-Local-Client: )(walc\.js)/,"$1bundlers/$2")
-
-			// remove reference to importing the "external.js" module
-			// since bundlers handle the dependencies
-			.replace(/import ?".\/external.js";?/,"")
-	);
 
 	// prepend MPL2-required copyright header
 	asn1Contents = `${asn1CopyrightHeader}${asn1Contents}`;
@@ -113,19 +116,11 @@ async function main() {
 	].join("\n");
 
 	await Promise.all([
-		// bundlers/walc.js (for bundlers)
-		fsp.writeFile(
-			DIST_BUNDLERS_WALC_FILE,
-			walcLibContents,
-			{ encoding: "utf8", }
-		),
-		// bundlers/walc-external-bundle.js (for bundlers)
 		fsp.writeFile(
 			DIST_BUNDLERS_WALC_EXTERNAL_BUNDLE_FILE,
 			walcExternalBundleContents,
 			{ encoding: "utf8", }
 		),
-		// add ASN1's license-required copyright header
 		fsp.writeFile(
 			DIST_AUTO_EXTERNAL_ASN1,
 			asn1Contents,
@@ -149,9 +144,26 @@ async function main() {
 	]);
 
 	console.log("Complete.");
+
+
+	// ****************************
+
+	async function prepareFileContents(contents,filename) {
+		// JS file (to minify)?
+		if (/\.[mc]?js$/i.test(filename)) {
+			contents = await minifyJS(contents);
+		}
+
+		// add copyright header
+		return `${
+			mainCopyrightHeader.replace(/#FILENAME#/g,filename)
+		}\n${
+			contents
+		}`;
+	}
 }
 
-async function buildFiles(files,fromBasePath,toDir,copyrightHeader,skipPatterns) {
+async function buildFiles(files,fromBasePath,toDir,processFileContents,skipPatterns) {
 	for (let fromPath of files) {
 		// should we skip copying this file?
 		if (matchesSkipPattern(fromPath,skipPatterns)) {
@@ -168,21 +180,9 @@ async function buildFiles(files,fromBasePath,toDir,copyrightHeader,skipPatterns)
 		}
 
 		let contents = await fsp.readFile(fromPath,{ encoding: "utf8", });
+		contents = await processFileContents(contents,path.basename(relativePath));
 
-		// JS file (to minify)?
-		if (/\.[mc]?js$/i.test(relativePath)) {
-			contents = await minifyJS(contents);
-		}
-
-		await fsp.writeFile(
-			outputPath,
-			`${
-				copyrightHeader.replace(/#FILENAME#/g,path.basename(outputPath))
-			}\n${
-				contents
-			}`,
-			{ encoding: "utf8", }
-		);
+		await fsp.writeFile(outputPath,contents,{ encoding: "utf8", });
 	}
 }
 
