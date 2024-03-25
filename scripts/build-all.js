@@ -52,7 +52,7 @@ async function main() {
 	// read version number from package.json
 	var version = packageJSON.version;
 	var [ mainCopyrightHeader, asn1CopyrightHeader, ] = await Promise.all([
-		// read main src copyright-header text,
+		// read main src copyright-header text
 		fsp.readFile(MAIN_COPYRIGHT_HEADER,{ encoding: "utf8", }),
 
 		// read ASN1 copyright header (required by MPL2 license)
