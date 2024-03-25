@@ -22,7 +22,7 @@ function WALC() {
 		async configResolved(cfg) {
 			config = cfg;
 			var bundlersDir = path.join(config.root,"node_modules","webauthn-local-client","dist","bundlers");
-			walcSrcPath = path.join(bundlersDir,"walc.js");
+			walcSrcPath = path.join(bundlersDir,"walc.mjs");
 			externalBundleSrcPath = path.join(bundlersDir,"walc-external-bundle.js");
 			externalBundleDestPath = (
 				config.command == "build" ?

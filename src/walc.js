@@ -1,5 +1,5 @@
 // dynamically load external dependencies (non-bundlers only)
-// NOTE: this `import` is removed from "bundlers/walc.js",
+// NOTE: this `import` is removed from "bundlers/walc.mjs",
 //       which is used with bundlers
 import { sodium, CBOR, ASN1 } from "./external.js";
 

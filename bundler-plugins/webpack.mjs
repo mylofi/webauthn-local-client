@@ -26,7 +26,7 @@ function WALC() {
 				options = compiler.options;
 
 				var bundlersDir = path.join(options.context,"node_modules","webauthn-local-client","dist","bundlers");
-				walcSrcPath = path.join(bundlersDir,"walc.js");
+				walcSrcPath = path.join(bundlersDir,"walc.mjs");
 				externalBundleSrcPath = path.join(bundlersDir,"walc-external-bundle.js");
 				externalBundleDestPath = path.join(options.output.path,path.basename(externalBundleSrcPath));
 			});

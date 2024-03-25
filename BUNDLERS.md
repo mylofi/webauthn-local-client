@@ -10,7 +10,7 @@ The plugins for vite and webpack are included in the `bundler-plugins/` director
 
 **Note:** You should not need to manually copy any files out of the `dist/bundlers/` directory, as the plugins access the `webauthn-local-client` dependency (in `node_modules`) directly to pull the files needed. But for reference, the files these plugins access are:
 
-* `dist/bundlers/walc.js`
+* `dist/bundlers/walc.mjs`
 
     ESM library module that's suitable for bundling and `import`ing into your web app.
 
@@ -93,4 +93,4 @@ To import and use **webauthn-local-client** in a *bundled* browser app:
 import { register, auth } from "webauthn-local-client";
 ```
 
-When `import`ed like this, both vite and webpack should (via these plugins) properly find and bundle the `dist/bundlers/walc.js` ESM library module with the rest of your app code, without any further steps necessary.
+When `import`ed like this, both vite and webpack should (via these plugins) properly find and bundle the `dist/bundlers/walc.mjs` ESM library module with the rest of your app code, without any further steps necessary.

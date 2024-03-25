@@ -3,12 +3,12 @@
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
 	"exports": {
-		".": "./dist/bundlers/walc.js",
+		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/vite": "./bundler-plugins/vite.mjs",
 		"./bundlers/webpack": "./bundler-plugins/webpack.mjs"
 	},
 	"browser": {
-		"webauthn-local-client": "./dist/bundlers/walc.js"
+		"webauthn-local-client": "./dist/bundlers/walc.mjs"
 	},
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
