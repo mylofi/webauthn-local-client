@@ -6,7 +6,7 @@ Then copy over all `dist/auto/*` contents, as-is:
 
 * `dist/auto/walc.js`
 
-    **Note:** not `dist/bundlers/walc.js`, which is only intended [for web application projects WITH a bundler](BUNDLERS.md)
+    **Note:** this is *not* the same as `dist/bundlers/walc.js`, which is only intended [for web application projects WITH a bundler](BUNDLERS.md)
 
 * `dist/auto/external.js`
 

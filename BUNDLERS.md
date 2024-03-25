@@ -14,7 +14,7 @@ The plugins for vite and webpack are included in the `bundler-plugins/` director
 
     ESM library module that's suitable for bundling and `import`ing into your web app.
 
-    **Note:** not `dist/auto/walc.js`, which is only intended [for web application projects WITHOUT a bundler](NON-BUNDLERS.md)
+    **Note:** this is *not* the same as `dist/auto/walc.js`, which is only intended [for web application projects WITHOUT a bundler](NON-BUNDLERS.md)
 
 * `dist/bundlers/walc-external-bundle.js`
 

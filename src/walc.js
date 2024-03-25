@@ -77,6 +77,8 @@ const supportsWebAuthn = (
 	typeof navigator.credentials.get != "undefined" &&
 	typeof PublicKeyCredential != "undefined" &&
 	typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
+
+	// NOTE: top-level await (requires ES2022+)
 	(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
 );
 
@@ -85,6 +87,8 @@ const supportsWebAuthn = (
 const supportsConditionalMediation = (
 	supportsWebAuthn &&
 	typeof PublicKeyCredential.isConditionalMediationAvailable != "undefined" &&
+
+	// NOTE: top-level await (requires ES2022+)
 	(await PublicKeyCredential.isConditionalMediationAvailable())
 );
 
