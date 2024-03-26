@@ -16,7 +16,8 @@
 		"build": "npm run build:all",
 		"test:start": "npx http-server test/ -p 8080",
 		"test": "npm run test:start",
-		"postinstall": "node scripts/postinstall.js"
+		"postinstall": "node scripts/postinstall.js",
+		"prepublishOnly": "npm run build:all"
 	},
 	"dependencies": {
 		"@yoursunny/asn1": "~0.0.20200718",
