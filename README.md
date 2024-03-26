@@ -1,6 +1,6 @@
 # WebAuthn Local Client
 
-[![npm Module](https://badge.fury.io/@lo-fi%2fwebauthn-local-client.svg)](https://www.npmjs.org/package/@lo-fi/webauthn-local-client)
+[![npm Module](https://badge.fury.io/js/@lo-fi%2Fwebauthn-local-client.svg)](https://www.npmjs.org/package/@lo-fi/webauthn-local-client)
 [![License](https://img.shields.io/badge/license-MIT-a1356a)](LICENSE.txt)
 
 **WebAuthn-Local-Client** is a web (browser) client for locally managing the ["Web Authentication" (`WebAuthn`) API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API).
