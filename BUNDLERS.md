@@ -38,12 +38,19 @@ import WALC from "@lo-fi/webauthn-local-client/bundlers/vite";
 export default defineConfig({
     // ..
 
-    plugins: [ WALC() ],
+    optimizeDeps: {
+        esbuildOptions: {
+            // WALC uses "top-level await", which is ES2022+
+            target: "es2022",
+        },
+    },
 
     build: {
         // WALC uses "top-level await", which is ES2022+
         target: "es2022"
     },
+
+    plugins: [ WALC() ],
 
     // ..
 });
@@ -55,11 +62,11 @@ This plugin works for the `vite dev` (dev-server), `vite preview` (also dev-serv
 
 #### Top-level `await`
 
-This library uses ["top-level `await`"](https://github.com/tc39/proposal-top-level-await), a feature added to JS in ES2022. The current default target for Vite seems to be browsers older than this, so the above config explicitly sets the `build.target` to `"es2022"`.
+This library uses ["top-level `await`"](https://github.com/tc39/proposal-top-level-await), a feature added to JS in ES2022. The current default target for Vite seems to be browsers older than this, so the above config explicitly sets the *targets* to `"es2022"`.
 
 You may experience issues where your tooling/configuration either ignores this setting, or otherwise breaks with it set. This may variously result in seeing an error about the top-level `await`s in this library being incompatible with the built-target, or an error about `await` needing to only be in `async function`s or the top-level of a module (which it is!).
 
-Those types of errors generally indicate that you may need to configure Vite to skip trying to optimize the `walc.mjs` file during bundling, something like:
+You may need to configure Vite to skip trying to optimize the `walc.mjs` file during bundling, something like:
 
 ```js
 export default defineConfig({
