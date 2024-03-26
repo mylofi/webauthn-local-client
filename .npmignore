@@ -1,5 +1,7 @@
+.github
 .npmignore
 .gitignore
+.editorconfig
 node_modules/
 .gh-build/
 src/external
