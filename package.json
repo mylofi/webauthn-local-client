@@ -1,7 +1,7 @@
 {
 	"name": "@lo-fi/webauthn-local-client",
 	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
-	"version": "0.999.1",
+	"version": "0.999.2",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/vite": "./bundler-plugins/vite.mjs",
@@ -38,7 +38,10 @@
 			"optional": true
 		}
 	},
-	"repository": "mylofi/webauthn-local-client",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mylofi/webauthn-local-client.git"
+	},
 	"keywords": [
 		"auth",
 		"passkey",
