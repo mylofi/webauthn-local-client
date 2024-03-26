@@ -2,7 +2,14 @@
 	"name": "webauthn-local-client",
 	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
-	"main": "./src/index.js",
+	"exports": {
+		".": "./dist/bundlers/walc.mjs",
+		"./bundlers/vite": "./bundler-plugins/vite.mjs",
+		"./bundlers/webpack": "./bundler-plugins/webpack.mjs"
+	},
+	"browser": {
+		"webauthn-local-client": "./dist/bundlers/walc.mjs"
+	},
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
 		"build:gh-pages": "npm run build:all && node scripts/build-gh-pages.js",
@@ -19,7 +26,16 @@
 	},
 	"devDependencies": {
 		"micromatch": "~4.0.5",
-		"recursive-readdir-sync": "~1.0.6"
+		"recursive-readdir-sync": "~1.0.6",
+		"terser": "~5.29.2"
+	},
+	"peerDependencies": {
+		"html-webpack-plugin": "~5.6.0"
+	},
+	"peerDependenciesMeta": {
+		"html-webpack-plugin": {
+			"optional": true
+		}
 	},
 	"repository": "mylofi/webauthn-local-client",
 	"keywords": [
@@ -27,7 +43,9 @@
 		"passkey",
 		"webauthn",
 		"biometric",
-		"cryptography"
+		"cryptography",
+		"vite-plugin",
+		"webpack-plugin"
 	],
 	"bugs": {
 		"url": "https://github.com/mylofi/webauthn-local-client/issues",

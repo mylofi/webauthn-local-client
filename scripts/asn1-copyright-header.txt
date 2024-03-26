@@ -1,9 +1,11 @@
-// Copyright:
-//     AJ ONeal (https://coolaj86.com/)
-//     Root (https://therootcompany.com/)
-//     2018-2019
-// License:
-//     MPL-2.0
-//
-// https://www.npmjs.com/package/@yoursunny/asn1
-// https://github.com/yoursunny/asn1.js
+/*!
+  Copyright:
+     AJ ONeal (https://coolaj86.com/)
+     Root (https://therootcompany.com/)
+     2018-2019
+  License:
+     MPL-2.0
+
+  https://www.npmjs.com/package/@yoursunny/asn1
+  https://github.com/yoursunny/asn1.js
+*/

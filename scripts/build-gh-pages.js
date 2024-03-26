@@ -10,10 +10,11 @@ var micromatch = require("micromatch");
 var recursiveReadDir = require("recursive-readdir-sync");
 
 const PKG_ROOT_DIR = path.join(__dirname,"..");
-const DIST_DIR = path.join(PKG_ROOT_DIR,"dist");
+const DIST_AUTO_DIR = path.join(PKG_ROOT_DIR,"dist","auto");
 const TEST_DIR = path.join(PKG_ROOT_DIR,"test");
 const BUILD_DIR = path.join(PKG_ROOT_DIR,".gh-build");
 const BUILD_DIST_DIR = path.join(BUILD_DIR,"dist");
+const BUILD_DIST_AUTO_DIR = path.join(BUILD_DIST_DIR,"auto");
 
 
 main().catch(console.error);
@@ -24,12 +25,11 @@ main().catch(console.error);
 async function main() {
 	console.log("*** Building GH-Pages Deployment ***");
 
-	// try to make the build directories, if needed
-	if (!(await safeMkdir(BUILD_DIR))) {
-		throw new Error(`Target directory (${BUILD_DIR}) does not exist and could not be created.`);
-	}
-	if (!(await safeMkdir(BUILD_DIST_DIR))) {
-		throw new Error(`Target directory (${BUILD_DIST_DIR}) does not exist and could not be created.`);
+	// try to make various .gh-build/** directories, if needed
+	for (let dir of [ BUILD_DIR, BUILD_DIST_DIR, BUILD_DIST_AUTO_DIR, ]) {
+		if (!(await safeMkdir(dir))) {
+			throw new Error(`Target directory (${dir}) does not exist and could not be created.`);
+		}
 	}
 
 	// copy test/* files
@@ -48,9 +48,9 @@ async function main() {
 
 	// copy dist/* files
 	await copyFilesTo(
-		recursiveReadDir(DIST_DIR),
-		DIST_DIR,
-		BUILD_DIST_DIR
+		recursiveReadDir(DIST_AUTO_DIR),
+		DIST_AUTO_DIR,
+		BUILD_DIST_AUTO_DIR
 	);
 
 	console.log("Complete.");

@@ -13,7 +13,9 @@ import {
 	toUTF8String,
 	resetAbortReason,
 }
-// swap "src" for "dist" here to test against the dist/* files
+// note: this module specifier comes from the import-map
+//    in index.html; swap "src" for "dist" here to test
+//    against the dist/* files
 from "webauthn-local-client/src";
 
 
