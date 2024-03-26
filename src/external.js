@@ -3,7 +3,7 @@ await Promise.all([
 	loadScript(import.meta.resolve("./external/libsodium.js")),
 	loadScript(import.meta.resolve("./external/cbor.js")),
 	loadScript(import.meta.resolve("./external/asn1.all.min.js")),
-])
+]);
 await loadScript(import.meta.resolve("./external/libsodium-wrappers.js"));
 
 

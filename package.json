@@ -1,6 +1,6 @@
 {
 	"name": "webauthn-local-client",
-	"description": "Client-only (browser) code for locally managing WebAuthn (passkey) API",
+	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
 	"version": "0.0.0-a",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
