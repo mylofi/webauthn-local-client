@@ -10,7 +10,7 @@ await loadScript(import.meta.resolve("./external/libsodium-wrappers.js"));
 var sodium = window.sodium;
 var CBOR = window.CBOR;
 var ASN1 = window.ASN1;
-export { sodium, CBOR, ASN1 };
+export { sodium, CBOR, ASN1, };
 
 
 // ********************************

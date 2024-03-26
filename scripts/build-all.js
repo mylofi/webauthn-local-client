@@ -29,7 +29,7 @@ const DIST_AUTO_EXTERNAL_CBOR = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(C
 const DIST_AUTO_EXTERNAL_LIBSODIUM = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_SRC));
 const DIST_AUTO_EXTERNAL_LIBSODIUM_WRAPPERS = path.join(DIST_AUTO_EXTERNAL_DIR,path.basename(LIBSODIUM_WRAPPERS_SRC));
 const DIST_BUNDLERS_DIR = path.join(DIST_DIR,"bundlers");
-const DIST_BUNDLERS_WALC_FILE = path.join(DIST_DIR,"bundlers",path.basename(WALC_SRC).replace(/\.js$/,".mjs"));
+const DIST_BUNDLERS_WALC_FILE = path.join(DIST_BUNDLERS_DIR,path.basename(WALC_SRC).replace(/\.js$/,".mjs"));
 const DIST_BUNDLERS_WALC_EXTERNAL_BUNDLE_FILE = path.join(DIST_BUNDLERS_DIR,"walc-external-bundle.js");
 
 
@@ -186,7 +186,7 @@ async function buildFiles(files,fromBasePath,toDir,processFileContents,skipPatte
 		}
 
 		let contents = await fsp.readFile(fromPath,{ encoding: "utf8", });
-		({ contents, outputPath, } = contents = await processFileContents(contents,outputPath));
+		({ contents, outputPath, } = await processFileContents(contents,outputPath));
 
 		await fsp.writeFile(outputPath,contents,{ encoding: "utf8", });
 	}
