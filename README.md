@@ -1,6 +1,6 @@
 # WebAuthn Local Client
 
-[![npm Module](https://badge.fury.io/mylofi/webauthn-local-client.svg)](https://www.npmjs.org/package/webauthn-local-client)
+[![npm Module](https://badge.fury.io/@lofi%2fwebauthn-local-client.svg)](https://www.npmjs.org/package/@lofi/webauthn-local-client)
 [![License](https://img.shields.io/badge/license-MIT-a1356a)](LICENSE.txt)
 
 **WebAuthn-Local-Client** is a web (browser) client for locally managing the ["Web Authentication" (`WebAuthn`) API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API).
@@ -19,11 +19,15 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 ## Deployment / Import
 
-The [**webauthn-local-client** npm package](https://npmjs.com/package/webauthn-local-client) includes a `dist/` directory with all files you need to deploy **webauthn-local-client** (and its dependencies) into your application/project.
+```cmd
+npm install @lofi/webauthn-local-client
+```
 
-If you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
+The [**@lofi/webauthn-local-client** npm package](https://npmjs.com/package/@lofi/webauthn-local-client) includes a `dist/` directory with all files you need to deploy **webauthn-local-client** (and its dependencies) into your application/project.
 
-* **USING A WEB BUNDLER?** (vite, webpack, etc) Use the `dist/bundlers/*` files and see [Bundler Deployment](BUNDLERS.md) for instructions.
+**Note:** If you obtain this library via git instead of npm, you'll need to [build `dist/` manually](#re-building-dist) before deployment.
+
+* **USING A WEB BUNDLER?** (Vite, Webpack, etc) Use the `dist/bundlers/*` files and see [Bundler Deployment](BUNDLERS.md) for instructions.
 
 * Otherwise, use the `dist/auto/*` files and see [Non-Bundler Deployment](NON-BUNDLERS.md) for instructions.
 
