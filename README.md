@@ -17,6 +17,12 @@ However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-
 
 **Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn) or [this one](https://github.com/raohwork/webauthn-client).
 
+## Demo App
+
+A demo app (using this library) that showcases usage of WebAuthn and also cryptography to locally encrypt/decrypt user data can be found [here](https://vella.ai/auth/).
+
+https://github.com/tonydangblog/webauthn-local-client/assets/63323230/9642ccd8-8be6-4987-81e1-d327dde03712
+
 ## Deployment / Import
 
 ```cmd
