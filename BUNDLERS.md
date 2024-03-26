@@ -33,7 +33,7 @@ If using Vite 5+, it's strongly suggested to import this library's Vite-plugin t
 
 ```js
 import { defineConfig } from "vite";
-import WALC from "webauthn-local-client/bundlers/vite";
+import WALC from "@lo-fi/webauthn-local-client/bundlers/vite";
 
 export default defineConfig({
     // ..
@@ -67,7 +67,7 @@ export default defineConfig({
     // ..
 
     optimizeDeps: {
-        exclude: [ "webauthn-local-client" ]
+        exclude: [ "@lo-fi/webauthn-local-client" ]
     }
 
     // ..
@@ -90,7 +90,7 @@ Then import this library's Webpack-plugin to manage the loading of its non-ESM d
 // 'HtmlWebpackPlugin' is a required dependency of the
 // webauthn-local-client Webpack plugin
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import WALC from "webauthn-local-client/bundlers/webpack";
+import WALC from "@lo-fi/webauthn-local-client/bundlers/webpack";
 
 export default {
     // ..
@@ -117,7 +117,7 @@ This plugin copies the `dist/bundlers/walc-external-bundle.js` file into the bui
 To import and use **webauthn-local-client** in a *bundled* browser app:
 
 ```js
-import { register, auth } from "webauthn-local-client";
+import { register, auth } from "@lo-fi/webauthn-local-client";
 ```
 
 When `import`ed like this, both Vite and Webpack should (via these plugins) properly find and bundle the `dist/bundlers/walc.mjs` ESM library module with the rest of your app code, hopefully without any further steps necessary.

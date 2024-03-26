@@ -21,7 +21,7 @@ function WALC() {
 
 		async configResolved(cfg) {
 			config = cfg;
-			var bundlersDir = path.join(config.root,"node_modules","webauthn-local-client","dist","bundlers");
+			var bundlersDir = path.join(config.root,"node_modules","@lo-fi","webauthn-local-client","dist","bundlers");
 			walcSrcPath = path.join(bundlersDir,"walc.mjs");
 			externalBundleSrcPath = path.join(bundlersDir,"walc-external-bundle.js");
 			externalBundleDestPath = (
@@ -37,14 +37,14 @@ function WALC() {
 		},
 		resolveId(source) {
 			// NOTE: this should never be `import`ed
-			if (source == "webauthn-local-client/bundlers/walc-external-bundle.js") {
+			if (source == "@lo-fi/webauthn-local-client/bundlers/walc-external-bundle.js") {
 				// ...but if found, mark it as "external" because
 				// the contents are non-ESM compatible
 				return { id: source, external: true, };
 			}
 		},
 		load(id,opts) {
-			if (id == "webauthn-local-client") {
+			if (id == "@lo-fi/webauthn-local-client") {
 				return fs.readFileSync(walcSrcPath,{ encoding: "utf8", });
 			}
 		},

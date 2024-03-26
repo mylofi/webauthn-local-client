@@ -1,14 +1,14 @@
 {
-	"name": "webauthn-local-client",
+	"name": "@lo-fi/webauthn-local-client",
 	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
-	"version": "1.0.0",
+	"version": "0.999.0",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/vite": "./bundler-plugins/vite.mjs",
 		"./bundlers/webpack": "./bundler-plugins/webpack.mjs"
 	},
 	"browser": {
-		"webauthn-local-client": "./dist/bundlers/walc.mjs"
+		"@lo-fi/webauthn-local-client": "./dist/bundlers/walc.mjs"
 	},
 	"scripts": {
 		"build:all": "node scripts/build-all.js",
