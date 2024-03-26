@@ -1,7 +1,7 @@
 {
 	"name": "webauthn-local-client",
 	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
-	"version": "0.0.0-a",
+	"version": "1.0.0",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/vite": "./bundler-plugins/vite.mjs",
