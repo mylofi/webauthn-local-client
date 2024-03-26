@@ -7,7 +7,9 @@
 
 ----
 
-[Demo/Tests](https://mylofi.github.io/webauthn-local-client/)
+Check out [vella.ai/auth](https://vella.ai/auth/) for a demo app using this library for local-only authentication with WebAuthn and local encryption.
+
+[Library Tests (Demo)](https://mylofi.github.io/webauthn-local-client/)
 
 ----
 
