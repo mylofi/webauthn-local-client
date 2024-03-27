@@ -112,7 +112,7 @@ async function main() {
 	// build walc-external-bundle.js
 	var walcExternalBundleContents = [
 		`/*! ${path.basename(ASN1_SRC)} */`, asn1Contents.trim(),
-		`/*! ${path.basename(CBOR_SRC)} */`, await minifyJS(cborContents),
+		`/*! ${path.basename(CBOR_SRC)} */`, await minifyJS(cborContents,/*esModuleFormat=*/false),
 		`/*! ${path.basename(LIBSODIUM_SRC)} */`, libsodiumContents.trim(),
 		`/*! ${path.basename(LIBSODIUM_WRAPPERS_SRC)} */`, libsodiumWrappersContents.trim(),
 	].join("\n");
@@ -192,7 +192,7 @@ async function buildFiles(files,fromBasePath,toDir,processFileContents,skipPatte
 	}
 }
 
-async function minifyJS(contents) {
+async function minifyJS(contents,esModuleFormat = true) {
 	let result = await terser.minify(contents,{
 		mangle: {
 			keep_fnames: true,
@@ -203,7 +203,7 @@ async function minifyJS(contents) {
 		output: {
 			comments: /^!/,
 		},
-		module: true,
+		module: esModuleFormat,
 	});
 	if (!(result && result.code)) {
 		if (result.error) throw result.error;
