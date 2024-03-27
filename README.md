@@ -67,12 +67,12 @@ else {
 }
 ```
 
-### Registering a new credential
+## Registering a new credential
 
 To register a new credential in a `WebAuthn`-exposed authenticator, use `register()`:
 
 ```js
-import { register, regDefaults } from "...";
+import { regDefaults, register } from "...";
 
 // optional:
 var regOptions = regDefaults({
@@ -82,7 +82,9 @@ var regOptions = regDefaults({
 var regResult = await register(regOptions);
 ```
 
-#### Configuration
+`register()` returns a promise that will resolve to an object ([`regResult` above](#registration-result)) if successful. Otherwise, it will be rejected (`await` will throw).
+
+### Register Configuration
 
 To configure the registration options, but include all the defaults for anything not being overridden, use `regDefaults(..)`.
 
@@ -112,7 +114,7 @@ Typical `register()` configuration options:
 
 See `regDefaults()` function signature for more options.
 
-#### Result
+### Registration Result
 
 `register()` returns a promise that's fulfilled (success or rejection) once the user completes or cancels a credential (aka "passkey") registration with their device's authenticator.
 
@@ -126,7 +128,7 @@ If `register()` completes successfully, the return value (`regResult` above) wil
 
     The `publicKey` object includes byte-arrays ([`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array)), which are *not* as conveniently serialized to/from JSON. Two helper methods are provided to make this easy: `packPublicKeyJSON()` (to store/transmit in base64 string form) and `unpackPublicKeyJSON()` (to restore from base64 string form).
 
-#### Attestation
+### Attestation
 
 This library by default does **NOT** ask for any [attestation information](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Attestation_and_Assertion#attestation) (i.e., `attestation: "none"` in `regDefaults()`) from a device authenticator -- for verifying the authenticity of its response via certificate chains -- nor does it perform any such verification on the registration result. Such verification is quite a complex process, best suited for a [FIDO2 Server](https://fidoalliance.org/fido2/), so it's out of scope for this library's intended local-in-browser-only operation.
 
@@ -134,12 +136,12 @@ You can however override the configuration (via `attestation: ".."`) for `regist
 
 Typically, though, [web applications *assume*](https://medium.com/webauthnworks/webauthn-fido2-demystifying-attestation-and-mds-efc3b3cb3651) that if a device is compromised in such a way that it's able to bypass/MITM a device authenticator, the app is *not* the appropriate or responsible party to detect or alert an end-user to such. Most applications skip verifying attestation certificate chains, unless there's very specific, elevated-risk security reasons they must do so.
 
-### Authenticating with an existing credential
+## Authenticating with an existing credential
 
 To authenticate (i.e., [perform an assertion](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Attestation_and_Assertion#assertion)) with an existing credential via a `WebAuthn`-exposed authenticator, use `auth()`:
 
 ```js
-import { auth, authDefaults } from "...";
+import { authDefaults, auth } from "...";
 
 // optional:
 var authOptions = authDefaults({
@@ -149,7 +151,9 @@ var authOptions = authDefaults({
 var authResult = await auth(authOptions);
 ```
 
-#### Configuration
+`auth()` returns a promise that will resolve to an object ([`authResult` above](#auth-result)) if successful. Otherwise, it will be rejected (`await` will throw).
+
+### Auth Configuration
 
 To configure the authentication options, but include all the defaults for anything not being overridden, use `authDefaults(..)`.
 
@@ -188,11 +192,11 @@ Typical `auth()` configuration options:
 
 See `authDefaults()` function signature for more options.
 
-#### Result
+### Auth Result
 
 `auth()` returns a promise that's fulfilled (success or rejection) once the user completes or cancels a credential (aka "passkey") authentication with their device's authenticator.
 
-If `auth()` completes completes successfully, the return value (`authResult` above) will include both a `request` and `response` property:
+If `auth()` completes completes successfully, the return value (`authResult` above) will be an object that includes `request` and `response` properties:
 
 * The `request` property includes all relevant configurations that were applied to the authentication request, and is provided mostly for debugging purposes.
 
@@ -208,7 +212,7 @@ If `auth()` completes completes successfully, the return value (`authResult` abo
 
     - `signature`: used via `verifyAuthResponse(..)` -- along with the public key from the original `register()` call for that credential -- to verify the signature against the `request.challenge` (and other request settings/info).
 
-### Verifying an authentication response
+## Verifying an authentication response
 
 To verify an authentication response (from `auth()`), use `verifyAuthResponse()`:
 
@@ -223,9 +227,11 @@ var verified = await verifyAuthResponse(
 );
 ```
 
-**Note:** You will likely have preserved the `regResult.response.credentialID` and `regResult.response.publicKey` from the original `register()` call for a credential -- either locally in e.g. `LocalStorage` or remotely on a server -- and later restore that to pass in on subsequent authentication attempts; registration and authentication will not typically happen in the same page instance (where `regResult` would still be present).
+`verifyAuthResponse()` returns a promise that resolves to `true` if verification was successful. `false` indicates everything was well-formed, but the signature verification failed for some other reason. Otherwise, the promise is rejected (`await` will throw) if something was malformed/unexpected.
 
-If you used `packPublicKeyJSON()` on the original `publicKey` value to store/transmit it, you'll need to use `unpackPublicKeyJSON()` before passing it to `verifyAuthResponse()`:
+You will need to have preserved `regResult.response.publicKey` (and likely `regResult.response.credentialID`) from the original `register()` call for a credential -- either locally in e.g. `LocalStorage` or remotely on a server -- and later restore that to pass in on subsequent authentication and verification attempts; registration and authentication will not typically happen in the same page instance (where `regResult` would still be present).
+
+Further, if you used `packPublicKeyJSON()` on the original `publicKey` value to store/transmit it, you'll need to use `unpackPublicKeyJSON()` before passing it to `verifyAuthResponse()`:
 
 ```js
 import { verifyAuthResponse, unpackPublicKeyJSON } from "...";
@@ -237,8 +243,6 @@ var verified = await verifyAuthResponse(
     unpackPublicKeyJSON(packedPublicKey)
 );
 ```
-
-If `verifyAuthResponse()` completes without an exception and returns `true`, verification was successful. Otherwise, `false` indicates everything was well-formed, but the signature verification failed for some other reason. An exception indicates something was malformed/unexpected.
 
 ## Re-building `dist/*`
 
