@@ -1,8 +1,10 @@
 // dynamically load external dependencies (non-bundlers only)
 // NOTE: this `import` is removed from "bundlers/walc.mjs",
 //       which is used with bundlers
-import { sodium, CBOR, ASN1, } from "./external.js";
+import sodium from "./external.js";
 
+import * as CBOR from "@oslojs/cbor";
+import * as ASN1 from "@oslojs/asn1";
 
 // ********************************
 
@@ -178,7 +180,7 @@ async function register(regOptions = regDefaults()) {
 				typeof regResult.response.getAuthenticatorData != "undefined" ?
 					(new Uint8Array(regResult.response.getAuthenticatorData())) :
 
-					CBOR.decode(regResult.response.attestationObject).authData
+					CBOR.decodeCBORIntoNative(regResult.response.attestationObject)[0].authData
 			);
 			let regAuthData = parseAuthenticatorData(regAuthDataRaw);
 			if (!checkRPID(regAuthData.rpIdHash,regOptions.relyingPartyID)) {
@@ -530,28 +532,31 @@ function verifySignatureSodium(publicKeyRaw,algoCOSE,signature,data) {
 
 // Adapted from: https://www.npmjs.com/package/@yoursunny/webcrypto-ed25519
 function parsePublicKeySPKI(publicKeySPKI) {
-	var der = ASN1.parseVerbose(new Uint8Array(publicKeySPKI));
+	var der = ASN1.decodeASN1(new Uint8Array(publicKeySPKI))[0];
 	return {
-		algo: sodium.to_hex(findValue(der.children[0])),
-		raw: findValue(der.children[1]),
+		algo: sodium.to_hex(findDERValue(der.items[0],ASN1.ASN1ObjectIdentifier)),
+		raw: findDERValue(der.items[1],ASN1.ASN1BitString),
 	};
+}
 
-	// **********************
-
-	function findValue(node) {
-		if (node.value && node.value instanceof Uint8Array) {
-			return node.value;
-		}
-		else if (node.children) {
-			for (let child of node.children) {
-				let res = findValue(child);
-				if (res != null) {
-					return res;
-				}
+function findDERValue(node,valueKind) {
+	if (valueKind && node instanceof valueKind) {
+		return (
+			(node.value && node.value instanceof Uint8Array) ? node.value :
+			(node.encodedId && node.encodedId instanceof Uint8Array) ? node.encodedId :
+			(node.bytes && node.bytes instanceof Uint8Array) ? node.bytes :
+			null
+		);
+	}
+	else if (node.items) {
+		for (let item of node.items) {
+			let res = findDERValue(item,valueKind);
+			if (res != null) {
+				return res;
 			}
 		}
-		return null;
 	}
+	return null;
 }
 
 function parseAuthenticatorData(authData) {
@@ -601,8 +606,11 @@ function parseSignature(algoCOSE,signature) {
 	if (isPublicKeyAlgorithm("ES256",algoCOSE)) {
 		// this algorithm's signature comes back ASN.1 encoded, per spec:
 		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
-		let der = ASN1.parseVerbose(signature);
-		return new Uint8Array([ ...der.children[0].value, ...der.children[1].value, ]);
+		let der = ASN1.decodeASN1(signature);
+		return new Uint8Array([
+			...findDERValue(der.items[0],ASN1.ASN1BitString),
+			...findDERValue(der.items[1],ASN1.ASN1BitString),
+		]);
 	}
 	// also per spec, other signature algorithms SHOULD NOT come back
 	// in ASN.1, so for those, we just pass through without any parsing
