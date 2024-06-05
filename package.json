@@ -22,7 +22,7 @@
 	"dependencies": {
 		"@oslojs/cbor": "~0.1.0",
 		"@oslojs/asn1": "~0.1.0",
-		"@oslojs/binary": "~0.1.0",
+		"@oslojs/binary": "~0.2.2",
 		"libsodium": "~0.7.13",
 		"libsodium-wrappers": "~0.7.13"
 	},
