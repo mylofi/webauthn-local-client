@@ -221,7 +221,7 @@ function matchesSkipPattern(pathStr,skipPatterns) {
 async function safeMkdir(pathStr) {
 	if (!fs.existsSync(pathStr)) {
 		try {
-			await fsp.mkdir(pathStr,0o755);
+			await fsp.mkdir(pathStr,{ recursive: true, mode: 0o755, });
 			return true;
 		}
 		catch (err) {}
