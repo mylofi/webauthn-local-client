@@ -29,7 +29,7 @@ The plugins for Astro, Vite, and Webpack are included in the `bundler-plugins/` 
 
 ### Astro Plugin
 
-If using Astro 4+, its strongly suggested to import this library's Astro-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `astro.config.mjs` file:
+If using Astro 4+, it's strongly suggested to import this library's Astro-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `astro.config.mjs` file:
 
 ```js
 import { defineConfig } from "astro/config";
@@ -37,6 +37,8 @@ import { defineConfig } from "astro/config";
 import WALC from "@lo-fi/webauthn-local-client/bundlers/astro";
 
 export default defineConfig({
+    // ..
+
     integrations: [ WALC(), ],
 
     vite: {
@@ -57,10 +59,12 @@ export default defineConfig({
             target: "es2022"
         },
     },
+
+    // ..
 });
 ```
 
-This plugin works for the `astro dev` (dev-server), `astro preview` (also dev-server), and `astro build` modes. In all cases, it copies the `dist/bundlers/walc-external-bundle.js` file into the `public/` directory of your project root. It also injects an inline `<script>` element into the head of all generated pages, which dynamically loads the `/walc-external-bundle.js` script file (which has all the dependencies needed.).
+This plugin works for the `astro dev` (dev-server), as well as `astro build` / `astro preview` modes. In all cases, it copies the `dist/bundlers/walc-external-bundle.js` file into the `public/` directory of your project root, as well as the `dist/` directory when running a build. It also injects an inline `<script>` element into the `<head>` of all generated pages, which dynamically loads the `/walc-external-bundle.js` script file (which has all the external dependencies needed).
 
 **Note:** At present, this plugin is not configurable in any way (i.e., calling `WALC()` above with no arguments). If something about its behavior is not compatible with your Astro project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/astro.mjs` plugin and make necessary changes.
 
@@ -164,4 +168,4 @@ To import and use **webauthn-local-client** in a *bundled* browser app:
 import { register, auth } from "@lo-fi/webauthn-local-client";
 ```
 
-When `import`ed like this, both Vite and Webpack should (via these plugins) properly find and bundle the `dist/bundlers/walc.mjs` ESM library module with the rest of your app code, hopefully without any further steps necessary.
+When `import`ed like this, Astro, Vite, and Webpack should (via these plugins) properly find and bundle the `dist/bundlers/walc.mjs` ESM library module with the rest of your app code, hopefully without any further steps necessary.
