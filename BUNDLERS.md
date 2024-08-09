@@ -27,7 +27,7 @@ The plugins for Astro, Vite, and Webpack are included in the `bundler-plugins/` 
 
 **Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment from the bundle file.
 
-### Astro Plugin
+### Astro Plugin (aka Integration)
 
 If using Astro 4+, it's strongly suggested to import this library's Astro-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `astro.config.mjs` file:
 

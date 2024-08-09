@@ -38,7 +38,7 @@ The [**@lo-fi/webauthn-local-client** npm package](https://npmjs.com/package/@lo
 To check if `WebAuthn` API and functionality is supported on the device:
 
 ```js
-import { supportsWebAuthn } from "...";
+import { supportsWebAuthn } from "..";
 
 if (supportsWebAuthn) {
     // welcome to the future, without passwords!
@@ -52,7 +52,7 @@ else {
 To check if [passkey autofill (aka "Conditional Mediation")](https://web.dev/articles/passkey-form-autofill) is supported on the device:
 
 ```js
-import { supportsConditionalMediation } from "...";
+import { supportsConditionalMediation } from "..";
 
 if (supportsConditionalMediation) {
     // provide an <input> and UX for user to
@@ -72,7 +72,7 @@ else {
 To register a new credential in a `WebAuthn`-exposed authenticator, use `register()`:
 
 ```js
-import { regDefaults, register } from "...";
+import { regDefaults, register } from "..";
 
 // optional:
 var regOptions = regDefaults({
@@ -141,7 +141,7 @@ Typically, though, [web applications *assume*](https://medium.com/webauthnworks/
 To authenticate (i.e., [perform an assertion](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Attestation_and_Assertion#assertion)) with an existing credential via a `WebAuthn`-exposed authenticator, use `auth()`:
 
 ```js
-import { authDefaults, auth } from "...";
+import { authDefaults, auth } from "..";
 
 // optional:
 var authOptions = authDefaults({
@@ -176,7 +176,7 @@ Typical `auth()` configuration options:
     For certain UX flows, such as switching from the conditional-mediation to another authentication approach, you will need to cancel (via `signal`) a previous call to `auth()` before invoking an `auth()` call with different options. But calling `abort()` causes that pending `auth()` to throw an exception. To suppress this exception when resetting, pass the `resetAbortReason` value:
 
     ```js
-    import { resetAbortReason, authDefaults, auth } from "...";
+    import { resetAbortReason, authDefaults, auth } from "..";
 
     var cancelToken = new AbortController();
     var authResult = await auth({ /* .. */ , signal: cancelToken.signal });
@@ -217,7 +217,7 @@ If `auth()` completes completes successfully, the return value (`authResult` abo
 To verify an authentication response (from `auth()`), use `verifyAuthResponse()`:
 
 ```js
-import { verifyAuthResponse, } from "...";
+import { verifyAuthResponse, } from "..";
 
 var publicKey = ... // aka, regResult.response.publicKey
 
@@ -234,7 +234,7 @@ You will need to have preserved `regResult.response.publicKey` (and likely `regR
 Further, if you used `packPublicKeyJSON()` on the original `publicKey` value to store/transmit it, you'll need to use `unpackPublicKeyJSON()` before passing it to `verifyAuthResponse()`:
 
 ```js
-import { verifyAuthResponse, unpackPublicKeyJSON } from "...";
+import { verifyAuthResponse, unpackPublicKeyJSON } from "..";
 
 var packedPublicKey = ... // result from previous packPublicKeyJSON()
 
