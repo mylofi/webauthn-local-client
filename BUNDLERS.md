@@ -2,11 +2,11 @@
 
 This project has non-ESM dependencies, which unfortunately cannot be *bundled* in with your other app code. Modern bundlers unfortunately don't out-of-the-box support configurations that can handle such a situation.
 
-As such, this project provides plugins for Vite and Webpack, to take care of the various steps needed to get these non-ESM dependencies into an otherwise bundled web app built by those tools.
+As such, this project provides plugins for Astro, Vite, and Webpack, to take care of the various steps needed to get these non-ESM dependencies into an otherwise bundled web app built by those tools.
 
 ## Bundler Plugins
 
-The plugins for Vite and Webpack are included in the `bundler-plugins/` directory. They should handle all necessary steps to load the dependencies.
+The plugins for Astro, Vite, and Webpack are included in the `bundler-plugins/` directory. They should handle all necessary steps to load the dependencies.
 
 **Note:** You should not need to manually copy any files out of the `dist/bundlers/` directory, as the plugins access the `webauthn-local-client` dependency (in `node_modules`) directly to pull the files needed. But for reference, the files these plugins access are:
 
@@ -27,9 +27,46 @@ The plugins for Vite and Webpack are included in the `bundler-plugins/` director
 
 **Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment from the bundle file.
 
+### Astro Plugin
+
+If using Astro 4+, its strongly suggested to import this library's Astro-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `astro.config.mjs` file:
+
+```js
+import { defineConfig } from "astro/config";
+
+import WALC from "@lo-fi/webauthn-local-client/bundlers/astro";
+
+export default defineConfig({
+    integrations: [ WALC(), ],
+
+    vite: {
+        plugins: [
+            // pulls in some necessary bits of WALC's vite plugin
+            WALC.vite(),
+        ],
+
+        optimizeDeps: {
+            esbuildOptions: {
+                // WALC uses "top-level await", which is ES2022+
+                target: "es2022",
+            },
+        },
+
+        build: {
+            // WALC uses "top-level await", which is ES2022+
+            target: "es2022"
+        },
+    },
+});
+```
+
+This plugin works for the `astro dev` (dev-server), `astro preview` (also dev-server), and `astro build` modes. In all cases, it copies the `dist/bundlers/walc-external-bundle.js` file into the `public/` directory of your project root. It also injects an inline `<script>` element into the head of all generated pages, which dynamically loads the `/walc-external-bundle.js` script file (which has all the dependencies needed.).
+
+**Note:** At present, this plugin is not configurable in any way (i.e., calling `WALC()` above with no arguments). If something about its behavior is not compatible with your Astro project setup -- which can vary widely and be quite complex to predict or support by a basic plugin -- it's recommended you simply copy over the `webauthn-local-client/bundler-plugins/astro.mjs` plugin and make necessary changes.
+
 ### Vite Plugin
 
-If using Vite 5+, it's strongly suggested to import this library's Vite-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `vite.config.js` file:
+If using Vite 5+ directly, it's strongly suggested to import this library's Vite-plugin to manage the loading of its non-ESM dependencies. Add something like the following to your `vite.config.js` file:
 
 ```js
 import { defineConfig } from "vite";
@@ -37,6 +74,8 @@ import WALC from "@lo-fi/webauthn-local-client/bundlers/vite";
 
 export default defineConfig({
     // ..
+
+    plugins: [ WALC(), ],
 
     optimizeDeps: {
         esbuildOptions: {
@@ -49,8 +88,6 @@ export default defineConfig({
         // WALC uses "top-level await", which is ES2022+
         target: "es2022"
     },
-
-    plugins: [ WALC() ],
 
     // ..
 });
@@ -83,7 +120,7 @@ export default defineConfig({
 
 #### SSR Breakage
 
-An unfortunate gotcha of tools that wrap Vite (e.g., Astro, Nuxt, etc) and do SSR (server-side rendering) is that they *break* a key assumption/behavior of this module's Vite plugin: the HTML injection of `<script src="/walc-external-bundle.js"></script>`.
+An unfortunate gotcha of some tools that wrap Vite (e.g., Nuxt, etc) and do SSR (server-side rendering) is that they *break* a key assumption/behavior of this module's Vite plugin: the HTML injection of `<script src="/walc-external-bundle.js"></script>`.
 
 As such, you'll likely need to manually add that `<script>` tag to your HTML pages/templates. The Vite plugin still copies that file into the `public/` folder for you, so it should load once the tag is added to your HTML.
 
