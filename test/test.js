@@ -18,6 +18,12 @@ import {
 //    against the dist/* files
 from "webauthn-local-client/src";
 
+// simple helper util for showing a spinner
+// (during slower passkey operations)
+import { startSpinner, stopSpinner, } from "./spinner.js";
+
+
+// ***********************
 
 var registerBtn;
 var reRegisterBtn;
@@ -208,6 +214,7 @@ async function registerCredential(name,userIDStr,isNewRegistration = true) {
 		),
 	});
 	try {
+		startSpinner();
 		let regResult = await register(regOptions);
 		if (regResult.response) {
 			// on re-register, remove previous credential DOM element (if any)
@@ -247,14 +254,14 @@ async function registerCredential(name,userIDStr,isNewRegistration = true) {
 				publicKey: regResult.response.publicKey,
 			};
 
-			console.log("regResult:",regResult);
-
 			let regType = isNewRegistration ? "Registering" : "Re-registering";
 			let forUserID = `(${toUTF8String(regResult.request.user.id)})`;
+			stopSpinner();
 			showToast(`${regType} ${forUserID} successful.`);
 		}
 	}
 	catch (err) {
+		stopSpinner();
 		logError(err);
 
 		if (
@@ -437,8 +444,6 @@ async function promptProvideAuth() {
 	async function onAuthAutofilled(authResult) {
 		resetCancelToken();
 
-		console.log("authResult (autofill):",authResult);
-
 		// show the User ID in the input box, for UX purposes
 		if (authResult && authResult.response && authResult.response.userID) {
 			userIDEl.readonly = true;
@@ -454,8 +459,6 @@ async function promptProvideAuth() {
 	}
 
 	async function onAuthInput(authResult) {
-		console.log("authResult (input):",authResult);
-
 		return checkAuthResponse(authResult);
 	}
 
@@ -475,6 +478,7 @@ async function promptPickAuth() {
 
 async function onAuth(credentialID,publicKey) {
 	try {
+		startSpinner();
 		let authOptions = authDefaults({
 			mediation: "optional",
 			allowCredentials: [
@@ -486,12 +490,11 @@ async function onAuth(credentialID,publicKey) {
 			],
 		});
 		let authResult = await auth(authOptions);
-
-		console.log(`authResult (${credentialID != null ? "explicit" : "discovered"}):`,authResult);
-
+		stopSpinner();
 		return authResult;
 	}
 	catch (err) {
+		stopSpinner();
 		logError(err);
 		showError(`Authenticating credential (${credentialID}) failed. Please try again.`);
 	}
@@ -503,9 +506,19 @@ async function onAuthCredential(evt) {
 		let credentialID = liEl.dataset.credentialId;
 		// NOTE: deliberately used her to show using the 'unpackPublicKeyJSON()' util
 		let publicKey = unpackPublicKeyJSON(liEl.dataset.publicKey);
-		let authResult = await onAuth(credentialID,publicKey);
-		if (authResult) {
+		try {
+			startSpinner();
+			let authResult = await onAuth(credentialID,publicKey);
+			if (!authResult) {
+				throw new Error("Authentication failed");
+			}
+			stopSpinner();
 			return checkAuthResponse(authResult,credentialID,publicKey);
+		}
+		catch (err) {
+			stopSpinner();
+			logError(err);
+			showError("Unable to authenticate.");
 		}
 	}
 }
