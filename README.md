@@ -265,16 +265,15 @@ Visit [`https://mylofi.github.io/webauthn-local-client/`](https://mylofi.github.
 
 ### Run Locally
 
-To locally run the tests, start the simple static server (no server-side logic):
+To instead run the tests locally, first make sure you've [already run the build](#re-building-dist), then:
 
 ```cmd
-# only needed one time
-npm install
-
-npm run test:start
+npm test
 ```
 
-Then visit `http://localhost:8080/` in a browser.
+This will start a static file webserver (no server logic), serving the interactive test page from `http://localhost:8080/`; visit this page in your browser to perform tests.
+
+By default, the `test/test.js` file imports the code from the `src/*` directly. However, to test against the `dist/auto/*` files (as included in the npm package), you can modify `test/test.js`, updating the `/src` in its `import` statement to `/dist` (see the import-map in `test/index.html` for more details).
 
 ## License
 
