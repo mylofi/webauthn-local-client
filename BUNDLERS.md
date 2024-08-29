@@ -25,7 +25,7 @@ The plugins for Astro, Vite, and Webpack are included in the `bundler-plugins/` 
     - `dist/auto/external/cbor.js`
     - `dist/auto/external/asn1.all.min.js`
 
-**Note:** The [`ASN1` dependency](https://github.com/yoursunny/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment from the bundle file.
+**Note:** The [`ASN1` dependency](https://github.com/root/asn1.js) is [licensed under MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/), which is generally compatible with this library's [MIT license](LICENSE.txt). However, MPL 2.0 specifically requires preservation of the copyright/license header (block comment at top of `asn1.all.min.js`). To comply with this licensing requirement, ensure your tooling does not remove this comment from the bundle file.
 
 ### Astro Plugin (aka Integration)
 
