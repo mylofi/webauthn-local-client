@@ -242,14 +242,14 @@ function regDefaults({
 		...otherAuthenticatorSelctionProps
 	} = {},
 	relyingPartyID = document.location.hostname,
-	relyingPartyName = "wacg",
+	relyingPartyName = "wacl",
 	attestation = "none",
 	challenge = sodium.randombytes_buf(20),
 	excludeCredentials = [
 		// { type: "public-key", id: ..., }
 	],
 	user: {
-		name: userName = "wacg-user",
+		name: userName = "wacl-user",
 		displayName: userDisplayName = userName,
 		id: userID = sodium.randombytes_buf(5),
 	} = {},
@@ -530,7 +530,7 @@ function verifySignatureSodium(publicKeyRaw,algoCOSE,signature,data) {
 
 // Adapted from: https://www.npmjs.com/package/@yoursunny/webcrypto-ed25519
 function parsePublicKeySPKI(publicKeySPKI) {
-	var der = ASN1.parseVerbose(new Uint8Array(publicKeySPKI));
+	var der = ASN1.parseVerbose(publicKeySPKI);
 	return {
 		algo: sodium.to_hex(findValue(der.children[0])),
 		raw: findValue(der.children[1]),
