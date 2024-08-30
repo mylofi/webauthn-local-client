@@ -63,6 +63,8 @@ function ready() {
 }
 
 async function promptRegister(isNewRegistration = true) {
+	if (!checkWebAuthnSupport()) return;
+
 	var registerNameEl;
 	var registerIDEl;
 	var generateIDBtn;
@@ -287,6 +289,8 @@ async function registerCredential(name,userIDStr,isNewRegistration = true) {
 }
 
 async function promptAuth() {
+	if (!checkWebAuthnSupport()) return;
+
 	var auth1Btn;
 	var auth2Btn;
 
@@ -326,6 +330,8 @@ async function promptAuth() {
 }
 
 async function promptProvideAuth() {
+	if (!checkWebAuthnSupport()) return;
+
 	var userIDEl;
 	var cancelToken;
 
@@ -472,6 +478,8 @@ async function promptProvideAuth() {
 }
 
 async function promptPickAuth() {
+	if (!checkWebAuthnSupport()) return;
+
 	var authResult = await onAuth();
 	return checkAuthResponse(authResult);
 }
@@ -596,4 +604,11 @@ function showToast(toastMsg) {
 			popup: "toast-popup",
 		},
 	});
+}
+
+async function checkWebAuthnSupport() {
+	if (!supportsWebAuthn) {
+		showError("Sorry, but this device doesn't seem to support the proper passkey functionality.");
+		return false;
+	}
 }
