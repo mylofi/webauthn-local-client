@@ -1,7 +1,7 @@
 {
 	"name": "@lo-fi/webauthn-local-client",
 	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
-	"version": "0.1000.1",
+	"version": "0.1000.2",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/astro": "./bundler-plugins/astro.mjs",

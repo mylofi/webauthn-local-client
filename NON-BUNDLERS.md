@@ -2,17 +2,17 @@
 
 To use this library directly -- i.e., in a classic/vanilla web project without a modern bundler tool -- make a directory for it (e.g., `webauthn-local-client/`) in your browser app's JS assets directory.
 
-Then copy over all `dist/auto/*` contents, as-is:
+Then copy over all `@lo-fi/webauthn-local-client/dist/auto/*` contents, as-is:
 
-* `dist/auto/walc.js`
+* `@lo-fi/webauthn-local-client/dist/auto/walc.js`
 
     **Note:** this is *not* the same as `dist/bundlers/walc.mjs`, which is only intended [for web application projects WITH a bundler](BUNDLERS.md)
 
-* `dist/auto/external.js`
+* `@lo-fi/webauthn-local-client/dist/auto/external.js`
 
-    This is an *auto-loader* that dynamically loads the rest of the `external/*` dependencies via `<script>`-element injection into the DOM. `dist/auto/walc.js` imports and activates this loader automatically.
+    This is an *auto-loader* that dynamically loads the rest of the non-ESM `external/*` dependencies via `<script>`-element injection into the DOM. `@lo-fi/webauthn-local-client/dist/auto/walc.js` runs this loader automatically.
 
-* `dist/auto/external/*` (preserve the whole `external/` sub-directory):
+* `@lo-fi/webauthn-local-client/dist/auto/external/*` (preserve the whole `external/` sub-directory):
     - `libsodium.js`
     - `libsodium-wrappers.js`
     - `cbor.js`
