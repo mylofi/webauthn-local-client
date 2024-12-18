@@ -74,12 +74,7 @@ const supportsWebAuthn = (
 	typeof navigator != "undefined" &&
 	typeof navigator.credentials != "undefined" &&
 	typeof navigator.credentials.create != "undefined" &&
-	typeof navigator.credentials.get != "undefined" &&
-	typeof PublicKeyCredential != "undefined" &&
-	typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable != "undefined" &&
-
-	// NOTE: top-level await (requires ES2022+)
-	(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())
+	typeof navigator.credentials.get != "undefined"
 );
 
 // Re: https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/isConditionalMediationAvailable
