@@ -7,7 +7,7 @@
 
 ----
 
-Check out [vella.ai/auth](https://vella.ai/auth/) for a demo app using this library for local-only authentication with WebAuthn and local encryption.
+Check out [next.vella.ai/auth](https://next.vella.ai/auth/) for a demo app using this library for local-only authentication with WebAuthn and local encryption.
 
 [Library Tests (Demo)](https://mylofi.github.io/webauthn-local-client/)
 
@@ -17,7 +17,7 @@ The `WebAuthn` API lets users of web applications avoid the long-troubled use of
 
 However, the intended use-case for **WebAuthn-Local-Client** is to allow [Local-First Web](https://localfirstweb.dev/) applications to handle user login locally on a device, without any server (FIDO2 or otherwise).
 
-**Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn) or [this one](https://github.com/raohwork/webauthn-client).
+**Note:** This package *may* be used in combination with a traditional FIDO2 server application architecture, but does not include any specific functionality for that purpose. For server integration with `WebAuthn`, you may instead consider alternative libraries, like [this one](https://github.com/passwordless-id/webauthn).
 
 ## Deployment / Import
 
@@ -196,7 +196,7 @@ See `authDefaults()` function signature for more options.
 
 `auth()` returns a promise that's fulfilled (success or rejection) once the user completes or cancels a credential (aka "passkey") authentication with their device's authenticator.
 
-If `auth()` completes completes successfully, the return value (`authResult` above) will be an object that includes `request` and `response` properties:
+If `auth()` completes successfully, the return value (`authResult` above) will be an object that includes `request` and `response` properties:
 
 * The `request` property includes all relevant configurations that were applied to the authentication request, and is provided mostly for debugging purposes.
 
