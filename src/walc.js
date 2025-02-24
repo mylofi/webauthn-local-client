@@ -183,6 +183,7 @@ async function register(regOptions = regDefaults()) {
 			if (regAuthData.signCount == 0) {
 				delete regAuthData.signCount;
 			}
+			let clientExtensionData = regResult.getClientExtensionResults();
 
 			return {
 				request: {
@@ -210,9 +211,21 @@ async function register(regOptions = regDefaults()) {
 					},
 					...(Object.fromEntries(
 						Object.entries(regAuthData).filter(([ key, val ]) => (
-							[ "flags", "signCount", "userPresence", "userVerification", ].includes(key)
+							[
+								"rawFlags", "flags", "signCount", "attestationData",
+								"extensionData",
+							].includes(key)
 						))
 					)),
+					...(
+						(
+							clientExtensionData != null &&
+							Object.keys(clientExtensionData).length > 0
+						) ?
+							{ clientExtensionData, } :
+
+							null
+					),
 					raw: regResult.response,
 				},
 			};
@@ -228,23 +241,13 @@ async function register(regOptions = regDefaults()) {
 
 function regDefaults({
 	credentialType = "publicKey",
-	authenticatorSelection: {
-		authenticatorAttachment = "platform",
-		userVerification = "required",
-		residentKey = "required",
-		requireResidentKey = true,
-
-		...otherAuthenticatorSelctionProps
-	} = {},
 	relyingPartyID = document.location.hostname,
-	relyingPartyName = "wacl",
+	relyingPartyName = "walc",
 	attestation = "none",
 	challenge = sodium.randombytes_buf(20),
-	excludeCredentials = [
-		// { type: "public-key", id: ..., }
-	],
+	excludeCredentials = [ /* { type: "public-key", id: ..., } */ ],
 	user: {
-		name: userName = "wacl-user",
+		name: userName = "walc-user",
 		displayName: userDisplayName = userName,
 		id: userID = sodium.randombytes_buf(5),
 	} = {},
@@ -259,14 +262,6 @@ function regDefaults({
 } = {}) {
 	var defaults = {
 		[credentialType]: {
-			authenticatorSelection: {
-				authenticatorAttachment,
-				userVerification,
-				residentKey,
-				requireResidentKey,
-				...otherAuthenticatorSelctionProps
-			},
-
 			attestation,
 
 			rp: {
@@ -338,6 +333,8 @@ async function auth(authOptions = authDefaults()) {
 				delete authData.signCount;
 			}
 			let signatureRaw = new Uint8Array(authResult.response.signature);
+			let clientExtensionData = authResult.getClientExtensionResults();
+
 			return {
 				request: {
 					credentialType: authResult.type,
@@ -354,12 +351,24 @@ async function auth(authOptions = authDefaults()) {
 					signature: signatureRaw,
 					...(Object.fromEntries(
 						Object.entries(authData).filter(([ key, val ]) => (
-							[ "flags", "signCount", "userPresence", "userVerification", ].includes(key)
+							[
+								"rawFlags", "flags", "signCount", "attestationData",
+								"extensionData",
+							].includes(key)
 						))
 					)),
 					...(
-						authResult.response.userHandle != null ?
+						(authResult.response.userHandle != null) ?
 							{ userID: new Uint8Array(authResult.response.userHandle), } :
+
+							null
+					),
+					...(
+						(
+							clientExtensionData != null &&
+							Object.keys(clientExtensionData).length > 0
+						) ?
+							{ clientExtensionData, } :
 
 							null
 					),
@@ -379,23 +388,17 @@ async function auth(authOptions = authDefaults()) {
 function authDefaults({
 	credentialType = "publicKey",
 	relyingPartyID = document.location.hostname,
-	userVerification = "required",
 	challenge = sodium.randombytes_buf(20),
-	allowCredentials = [
-		// { type: "public-key", id: ..., }
-	],
-	mediation = "optional",
+	allowCredentials = [ /* { type: "public-key", id: ..., } */ ],
 	signal: cancelAuthSignal,
 	...otherOptions
 } = {}) {
 	var defaults = {
 		[credentialType]: {
 			rpId: relyingPartyID,
-			userVerification,
 			challenge,
 			allowCredentials,
 		},
-		mediation,
 		...(cancelAuthSignal != null ? { signal: cancelAuthSignal, } : null),
 		...otherOptions
 	};
@@ -551,22 +554,145 @@ function parsePublicKeySPKI(publicKeySPKI) {
 
 function parseAuthenticatorData(authData) {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Authenticator_data
-	//	 32 bytes: rpIdHash
-	//	 1 byte: flags
-	//		  Bit 0, User Presence (UP)
-	//		  Bit 2, User Verification (UV)
-	//		  Bit 3, Backup Eligibility (BE)
-	//		  Bit 4, Backup State (BS)
-	//		  Bit 6, Attested Credential Data (AT)
-	//		  Bit 7, Extension Data (ED)
-	//	 4 bytes: signCount (0 means disabled)
+	//   32 bytes: rpIdHash
+	//    1 byte: flags
+	//         Bit 0, User Presence (UP)
+	//         Bit 2, User Verification (UV)
+	//         Bit 3, Backup Eligibility (BE)
+	//         Bit 4, Backup State (BS)
+	//         Bit 6, Attested Credential Data (AT)
+	//         Bit 7, Extension Data (ED)
+	//    4 bytes: signCount (0 means disabled)
+	//    ? bytes: attestation data
+	//    ? bytes: authenticator extension data
+
+	var rpIdHash = authData.slice(0,32);
+	var rawFlags = authData[32];
+	var userPresence = ((rawFlags & 1) == 1);
+	var userVerification = ((rawFlags & 4) == 4);
+	var backupEligibility = ((rawFlags & 8) == 8);
+	var backupState = ((rawFlags & 16) == 16);
+	var hasAT = ((rawFlags & 64) == 64);
+	var hasED = ((rawFlags & 128) == 128);
+	var signCount = byteArrayTo32Int(authData.slice(33,37));
+	var remainingBytes = authData.slice(37);
+	var attestationData = null;
+	var extensionData = null;
+
+	if (hasAT) {
+		// https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Authenticator_data#attestedcredentialdata
+		//  16 bytes: Authenticator Attestation Globally Unique Identifier (AAGUID)
+		//   2 bytes: Length of Credential ID
+		//   ? bytes: Credential ID
+		//   ? bytes: Credential Public Key (COSE encoding)
+
+		let AAGUID = remainingBytes.slice(0,16);
+		let dataView = new DataView(remainingBytes.slice(16,18).buffer);
+		let credentialIDLength = byteArrayTo32Int(remainingBytes.slice(16,18));
+		let credentialID = remainingBytes.slice(18,18 + credentialIDLength);
+		let publicKey = null;
+		let start = 18 + credentialIDLength;
+		let end = start + 1;
+		while (end < authData.byteLength) {
+			try {
+				publicKey = CBOR.decode(remainingBytes.slice(start,end).buffer);
+				break;
+			}
+			catch (err) {
+				end++;
+			}
+		}
+
+		// public-key was successfully decoded?
+		if (publicKey != null) {
+			// public-key in OKP (typically EdDSA) form?
+			if (
+				publicKey[1] == 1 &&
+				publicKey[3] == -8
+			) {
+				publicKey = {
+					algoCOSE: publicKey[3],
+					raw: publicKey[-2],
+				};
+			}
+			// pack the X/Y elliptic curve coordinates into
+			// more convenient "uncompressed EC point" form?
+			else if (
+				publicKey[1] == 2 &&
+				[ -7, -8, ].includes(publicKey[3]) &&
+				publicKey[-2] != null &&
+				publicKey[-3] != null
+			) {
+				// public-key data
+				//   1: key type (2 = elliptic curve, etc)
+				//   3: algorithm/COSE ID (-7 = ECDSA, etc)
+				//  -1: curve type (1 = P-256 curve, etc)
+				//  -2: x coordinate of the curve
+				//  -3: y coordinate of the curve
+
+				let rawKey = new Uint8Array(65);
+				rawKey[0] = 0x04;
+				rawKey.set(publicKey[-2],1);
+				rawKey.set(publicKey[-3],33);
+				publicKey = {
+					algoCOSE: publicKey[3],
+					raw: rawKey,
+				};
+			}
+			// RSA key (in modulus/exponent form)?
+			else if (
+				publicKey[1] == 3 &&
+				[ -37, -257, ].includes(publicKey[3])
+			) {
+				publicKey = {
+					algoCOSE: publicKey[3],
+					mod: publicKey[-1],
+					exp: publicKey[-2],
+				};
+			}
+			// otherwise, unrecognized public-key return
+			// format, so just copy the data as-is
+			else {
+				publicKey = {
+					algoCOSE: publicKey[3],
+					...(publicKey[1] != null ? { 1: publicKey[1], } : null),
+					...(publicKey[-1] != null ? { [-1]: publicKey[-1], } : null),
+					...(publicKey[-2] != null ? { [-2]: publicKey[-2], } : null),
+					...(publicKey[-3] != null ? { [-3]: publicKey[-3], } : null),
+				};
+			}
+		}
+
+		attestationData = {
+			AAGUID,
+			credentialID,
+			publicKey,
+		};
+
+		remainingBytes = remainingBytes.slice(end);
+	}
+
+	if (hasAT && remainingBytes.byteLength > 0) {
+		try {
+			extensionData = CBOR.decode(remainingBytes);
+		}
+		catch (err) {}
+	}
 
 	return {
-		rpIdHash: authData.slice(0,32),
-		flags: authData[32],
-		userPresence: ((authData[32] & 1) == 1),
-		userVerification: ((authData[32] & 4) == 4),
-		signCount: byteArrayTo32Int(authData.slice(33,37)),
+		rpIdHash,
+		rawFlags,
+		flags: {
+			userPresence,
+			userVerification,
+			backupEligibility,
+			backupState,
+			hasAT,
+			hasED,
+		},
+		signCount,
+		attestationData,
+		extensionData,
 	};
 }
 
@@ -612,7 +738,7 @@ function byteArrayTo32Int(byteArray) {
 		tmp.set(byteArray,4 - byteArray.byteLength);
 		byteArray = tmp;
 	}
-	return new DataView(byteArray.buffer).getInt32(0);
+	return new DataView(byteArray.buffer).getUint32(0);
 }
 
 async function computeSHA256Hash(val) {

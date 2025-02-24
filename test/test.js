@@ -194,10 +194,27 @@ async function promptRegister(isNewRegistration = true) {
 async function registerCredential(name,userIDStr,isNewRegistration = true) {
 	var userID = sodium.from_string(userIDStr);
 	var regOptions = regDefaults({
+		authenticatorSelection: {
+			authenticatorAttachment: "platform",
+			userVerification: "required",
+			residentKey: "required",
+			requireResidentKey: true,
+		},
+
 		user: {
 			name,
 			displayName: name,
 			id: userID,
+		},
+
+		extensions: {
+			credProps: true,
+			credentialProtectionPolicy: "userVerificationRequired",
+
+			// this extra protection would be nice, but it doesn't
+			// seem to work anywhere yet:
+			//
+			// enforceCredentialProtectionPolicy: true,
 		},
 
 		// only *exclude credentials* on a new registration, not
@@ -218,6 +235,8 @@ async function registerCredential(name,userIDStr,isNewRegistration = true) {
 	try {
 		startSpinner();
 		let regResult = await register(regOptions);
+		// console.log("regResult",regResult);
+
 		if (regResult.response) {
 			// on re-register, remove previous credential DOM element (if any)
 			if (!isNewRegistration && userIDStr in credentialsByUserID) {
@@ -298,7 +317,7 @@ async function promptAuth() {
 		title: "Authenticate",
 		html: `
 			<p>
-				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Pick my passkey</button>
+				<button type="button" id="auth-1-btn" class="swal2-styled swal2-default-outline modal-btn">Discover/Pick my passkey</button>
 			</p>
 			<p>
 				<button type="button" id="auth-2-btn" class="swal2-styled swal2-default-outline modal-btn">Provide my user ID</button>
@@ -390,6 +409,8 @@ async function promptProvideAuth() {
 
 			cancelToken = new AbortController();
 			var authOptions = authDefaults({
+				mediation: "required",
+				userVerification: "required",
 				...(
 					(userID in credentialsByUserID) ? {
 						allowCredentials: (
@@ -406,6 +427,7 @@ async function promptProvideAuth() {
 			});
 			try {
 				let authResult = await auth(authOptions);
+				// console.log("authResult",authResult);
 				if (authResult) {
 					onAuthInput(authResult);
 				}
@@ -428,11 +450,13 @@ async function promptProvideAuth() {
 		cancelToken = new AbortController();
 		var authOptions = authDefaults({
 			mediation: "conditional",
+			userVerification: "required",
 			signal: cancelToken.signal,
 		});
 		try {
 			let authResult = await auth(authOptions);
 			if (authResult) {
+				// console.log("authResult",authResult);
 				onAuthAutofilled(authResult);
 			}
 		}
@@ -488,7 +512,8 @@ async function onAuth(credentialID,publicKey) {
 	try {
 		startSpinner();
 		let authOptions = authDefaults({
-			mediation: "optional",
+			mediation: "required",
+			userVerification: "required",
 			allowCredentials: [
 				...(
 					credentialID != null ?
@@ -498,6 +523,7 @@ async function onAuth(credentialID,publicKey) {
 			],
 		});
 		let authResult = await auth(authOptions);
+		// console.log("authResult",authResult);
 		stopSpinner();
 		return authResult;
 	}

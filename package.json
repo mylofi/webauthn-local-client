@@ -1,7 +1,7 @@
 {
 	"name": "@lo-fi/webauthn-local-client",
 	"description": "Browser-only utils for locally managing WebAuthn (passkey) API",
-	"version": "0.2000.1",
+	"version": "0.3000.0",
 	"exports": {
 		".": "./dist/bundlers/walc.mjs",
 		"./bundlers/astro": "./bundler-plugins/astro.mjs",
@@ -23,8 +23,8 @@
 	"dependencies": {
 		"@root/asn1": "~1.0.2",
 		"cbor-js": "~0.1.0",
-		"libsodium": "~0.7.13",
-		"libsodium-wrappers": "~0.7.13"
+		"libsodium": "~0.7.15",
+		"libsodium-wrappers": "~0.7.15"
 	},
 	"devDependencies": {
 		"micromatch": "~4.0.5",
