@@ -7,7 +7,7 @@
 
 ----
 
-Check out [next.vella.ai/auth](https://next.vella.ai/auth/) for a demo app using this library for local-only authentication with WebAuthn and local encryption.
+Check out [Passkey Garden](https://passkey.garden/try-passkeys) for a demo of using this library for local-only (zero-server) authentication, via passkeys.
 
 [Library Tests (Demo)](https://mylofi.github.io/webauthn-local-client/)
 

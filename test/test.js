@@ -10,7 +10,9 @@ import {
 
 	packPublicKeyJSON,
 	unpackPublicKeyJSON,
+	toBase64String,
 	toUTF8String,
+	fromUTF8String,
 	resetAbortReason,
 }
 // note: this module specifier comes from the import-map
@@ -172,10 +174,7 @@ async function promptRegister(isNewRegistration = true) {
 	}
 
 	async function onGenerateID() {
-		registerIDEl.value = sodium.to_base64(
-			sodium.randombytes_buf(10),
-			sodium.base64_variants.ORIGINAL
-		);
+		registerIDEl.value = toBase64String(sodium.randombytes_buf(10));
 	}
 
 	async function onCopyID() {
@@ -192,7 +191,7 @@ async function promptRegister(isNewRegistration = true) {
 }
 
 async function registerCredential(name,userIDStr,isNewRegistration = true) {
-	var userID = sodium.from_string(userIDStr);
+	var userID = fromUTF8String(userIDStr);
 	var regOptions = regDefaults({
 		authenticatorSelection: {
 			authenticatorAttachment: "platform",
@@ -411,18 +410,10 @@ async function promptProvideAuth() {
 			var authOptions = authDefaults({
 				mediation: "required",
 				userVerification: "required",
-				...(
-					(userID in credentialsByUserID) ? {
-						allowCredentials: (
-							{
-								type: "public-key",
-								id: credentialsByUserID[userID].credentialID,
-							}
-						),
-					} :
-
-					null
-				),
+				allowCredentials: [{
+					type: "public-key",
+					id: credentialsByUserID[userID].credentialID,
+				}],
 				signal: cancelToken.signal,
 			});
 			try {
@@ -514,13 +505,17 @@ async function onAuth(credentialID,publicKey) {
 		let authOptions = authDefaults({
 			mediation: "required",
 			userVerification: "required",
-			allowCredentials: [
-				...(
-					credentialID != null ?
-						[ { type: "public-key", id: credentialID, }, ] :
-						[]
-				),
-			],
+			...(
+				credentialID != null ?
+					{
+						allowCredentials: [{
+							type: "public-key",
+							id: credentialID,
+						}]
+					} :
+
+					null
+			),
 		});
 		let authResult = await auth(authOptions);
 		// console.log("authResult",authResult);
@@ -538,7 +533,9 @@ async function onAuthCredential(evt) {
 	if (evt.target.matches(".cred-auth-btn")) {
 		let liEl = evt.target.closest("li[data-credential-id]");
 		let credentialID = liEl.dataset.credentialId;
-		// NOTE: deliberately used her to show using the 'unpackPublicKeyJSON()' util
+
+		// NOTE: deliberately used here to show using the
+		// 'unpackPublicKeyJSON()' util
 		let publicKey = unpackPublicKeyJSON(liEl.dataset.publicKey);
 		try {
 			startSpinner();
@@ -581,7 +578,7 @@ async function checkAuthResponse(authResult,credentialID,publicKey) {
 	return void (
 		authSuccess ? (
 				showToast(`Authentication${(
-					"userID" in authResult.response ?
+					authResult.response.userID != null ?
 						` (${toUTF8String(authResult.response.userID)})` :
 						""
 				)} successful.`)
