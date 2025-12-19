@@ -390,6 +390,11 @@ function authDefaults({
 	relyingPartyID = document.location.hostname,
 	challenge = sodium.randombytes_buf(20),
 	allowCredentials = [ /* { type: "public-key", id: ..., } */ ],
+	mediation,
+	hints,
+	userVerification,
+	timeout,
+	extensions,
 	signal: cancelAuthSignal,
 	...otherOptions
 } = {}) {
@@ -398,7 +403,12 @@ function authDefaults({
 			rpId: relyingPartyID,
 			challenge,
 			allowCredentials,
+			...(hints != null ? { hints, } : null),
+			...(userVerification != null ? { userVerification, } : null),
+			...(timeout != null ? { timeout, } : null),
+			...(extensions != null ? { extensions, } : null),
 		},
+		...(mediation != null ? { mediation, } : null),
 		...(cancelAuthSignal != null ? { signal: cancelAuthSignal, } : null),
 		...otherOptions
 	};
