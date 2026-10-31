@@ -728,12 +728,34 @@ async function checkRPID(rpIDHash,origRPID) {
 	);
 }
 
+function derIntegerTo32Bytes(value) {
+	// DER INTEGERs are two's-complement, minimal length: a value whose
+	// top bit is set carries a leading 0x00 byte, and a small value is
+	// shorter than 32 bytes. WebCrypto ECDSA verification needs exactly
+	// 32 bytes per integer (r || s, 64 bytes total), so normalize here:
+	// strip leading zero bytes, then left-pad with zeros to 32 bytes.
+	let start = 0;
+	while (start < value.length - 1 && value[start] === 0) {
+		start++;
+	}
+	let trimmed = value.slice(start);
+	if (trimmed.length > 32) {
+		throw new Error("ES256 signature integer exceeds 32 bytes");
+	}
+	let out = new Uint8Array(32);
+	out.set(trimmed,32 - trimmed.length);
+	return out;
+}
+
 function parseSignature(algoCOSE,signature) {
 	if (isPublicKeyAlgorithm("ES256",algoCOSE)) {
 		// this algorithm's signature comes back ASN.1 encoded, per spec:
 		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
 		let der = ASN1.parseVerbose(signature);
-		return new Uint8Array([ ...der.children[0].value, ...der.children[1].value, ]);
+		return new Uint8Array([
+			...derIntegerTo32Bytes(der.children[0].value),
+			...derIntegerTo32Bytes(der.children[1].value),
+		]);
 	}
 	// also per spec, other signature algorithms SHOULD NOT come back
 	// in ASN.1, so for those, we just pass through without any parsing
