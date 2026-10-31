@@ -110,6 +110,10 @@ export {
 	toUTF8String,
 	fromUTF8String,
 	resetAbortReason,
+
+	// signature parsing (exported for the test-bed in test/:
+	// it is an internal helper, not part of the main API)
+	parseSignature,
 };
 var publicAPI = {
 	// feature support tests
@@ -131,6 +135,10 @@ var publicAPI = {
 	toUTF8String,
 	fromUTF8String,
 	resetAbortReason,
+
+	// signature parsing (exported for the test-bed in test/:
+	// it is an internal helper, not part of the main API)
+	parseSignature,
 };
 export default publicAPI;
 
@@ -728,12 +736,24 @@ async function checkRPID(rpIDHash,origRPID) {
 	);
 }
 
+function intTo32Bytes(value) {
+	if (value.length > 32) {
+		throw new Error("Signature integer exceeds 32 bytes");
+	}
+	let out = new Uint8Array(32);
+	out.set(value,32 - value.length);
+	return out;
+}
+
 function parseSignature(algoCOSE,signature) {
 	if (isPublicKeyAlgorithm("ES256",algoCOSE)) {
 		// this algorithm's signature comes back ASN.1 encoded, per spec:
 		//   https://www.w3.org/TR/webauthn-2/#sctn-signature-attestation-types
 		let der = ASN1.parseVerbose(signature);
-		return new Uint8Array([ ...der.children[0].value, ...der.children[1].value, ]);
+		return new Uint8Array([
+			...intTo32Bytes(der.children[0].value),
+			...intTo32Bytes(der.children[1].value),
+		]);
 	}
 	// also per spec, other signature algorithms SHOULD NOT come back
 	// in ASN.1, so for those, we just pass through without any parsing

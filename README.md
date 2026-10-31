@@ -279,4 +279,4 @@ By default, the `test/test.js` file imports the code from the `src/*` directly. 
 
 [![License](https://img.shields.io/badge/license-MIT-a1356a)](LICENSE.txt)
 
-All code and documentation are (c) 2024 Kyle Simpson and released under the [MIT License](http://getify.mit-license.org/). A copy of the MIT License [is also included](LICENSE.txt).
+All code and documentation are (c) 2024-2026 Kyle Simpson and released under the [MIT License](http://getify.mit-license.org/). A copy of the MIT License [is also included](LICENSE.txt).

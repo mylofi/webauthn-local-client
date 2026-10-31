@@ -14,6 +14,9 @@ import {
 	toUTF8String,
 	fromUTF8String,
 	resetAbortReason,
+
+	// internal helper, exported for these signature tests
+	parseSignature,
 }
 // note: this module specifier comes from the import-map
 //    in index.html; swap "src" for "dist" here to test
@@ -62,6 +65,144 @@ function ready() {
 	);
 	authBtn.addEventListener("click",promptAuth,false);
 	registeredCredentialsEl.addEventListener("click",onAuthCredential,true);
+
+	// ES256 DER signature parsing tests: no authenticator needed,
+	// they run automatically on page load (see runES256SignatureTests)
+	try {
+		runES256SignatureTests();
+	}
+	catch (err) {
+		var statusEl = document.getElementById("es256-signature-tests-status");
+		if (statusEl) {
+			statusEl.textContent = "ES256 signature tests failed to run: " + err.message;
+		}
+	}
+}
+
+
+// ***********************
+// ES256 DER signature parsing tests (PR #21, issue #15).
+// Each case builds a full DER SEQUENCE signature, passes it
+// through parseSignature(-7 /* ES256 COSE ID */, der), and
+// checks the exact 64-byte (r || s) result, including the
+// 32-byte boundary between r and s.
+
+function bytesFrom(start,length) {
+	var bytes = new Uint8Array(length);
+	for (var i = 0; i < length; i++) {
+		bytes[i] = (start + i) & 0xff;
+	}
+	return bytes;
+}
+
+function derSignature(r,s) {
+	var totalLen = 4 + r.length + s.length;
+	var der = new Uint8Array(2 + totalLen);
+	der[0] = 0x30;
+	der[1] = totalLen;
+	der[2] = 0x02;
+	der[3] = r.length;
+	der.set(r,4);
+	der[4 + r.length] = 0x02;
+	der[5 + r.length] = s.length;
+	der.set(s,6 + r.length);
+	return der;
+}
+
+function concatBytes() {
+	var total = 0;
+	for (var i = 0; i < arguments.length; i++) {
+		total += arguments[i].length;
+	}
+	var out = new Uint8Array(total);
+	var offset = 0;
+	for (var j = 0; j < arguments.length; j++) {
+		out.set(arguments[j],offset);
+		offset += arguments[j].length;
+	}
+	return out;
+}
+
+function bytesEqual(a,b) {
+	if (a.length != b.length) return false;
+	for (var i = 0; i < a.length; i++) {
+		if (a[i] != b[i]) return false;
+	}
+	return true;
+}
+
+function runES256SignatureTests() {
+	var listEl = document.getElementById("es256-signature-tests");
+	var statusEl = document.getElementById("es256-signature-tests-status");
+	if (!listEl) return;
+
+	// r/s values are chosen distinct, so a swapped or shifted
+	// boundary between r and s fails the comparison.
+	var r32 = bytesFrom(0x11,32);
+	var s32 = bytesFrom(0x41,32);
+	var r31 = bytesFrom(0x11,31);
+	var s31 = bytesFrom(0x41,31);
+	// 33-byte DER integer: leading 0x00 sign byte + 32 bytes
+	// whose top bit is set (0x80..0x9f).
+	var rPadded = concatBytes(new Uint8Array([0x00]),bytesFrom(0x80,32));
+
+	var cases = [
+		{
+			name: "1. Normal-length integers (32 + 32 bytes)",
+			r: r32,
+			s: s32,
+			expected: concatBytes(r32,s32),
+		},
+		{
+			name: "2. Short r integer (31 + 32 bytes)",
+			r: r31,
+			s: s32,
+			expected: concatBytes(new Uint8Array([0x00]),r31,s32),
+		},
+		{
+			name: "3. Short s integer (32 + 31 bytes)",
+			r: r32,
+			s: s31,
+			expected: concatBytes(r32,new Uint8Array([0x00]),s31),
+		},
+		{
+			name: "4. DER sign-padding (33-byte encoded INTEGER)",
+			r: rPadded,
+			s: s32,
+			// The DER encoding is 33 bytes (leading 0x00 sign
+			// byte), but @root/asn1 already strips that byte
+			// before parseSignature() sees the value, so the
+			// result must be exactly those 32 bytes for r.
+			expected: concatBytes(bytesFrom(0x80,32),s32),
+		},
+	];
+
+	var passed = 0;
+	cases.forEach(function (testCase) {
+		var liEl = document.createElement("li");
+		try {
+			var result = parseSignature(-7,derSignature(testCase.r,testCase.s));
+			if (
+				result.length == 64 &&
+				bytesEqual(result,testCase.expected)
+			) {
+				passed++;
+				liEl.textContent = "PASS: " + testCase.name + " -> 64 bytes, r || s as expected";
+			}
+			else {
+				liEl.textContent = "FAIL: " + testCase.name +
+					" -> expected 64 bytes, got " + result.length + " bytes";
+			}
+		}
+		catch (err) {
+			liEl.textContent = "FAIL: " + testCase.name + " -> threw: " + err.message;
+		}
+		listEl.appendChild(liEl);
+	});
+
+	if (statusEl) {
+		statusEl.textContent = "ES256 signature tests: " + passed + "/" + cases.length + " passed";
+	}
 }
 
 async function promptRegister(isNewRegistration = true) {

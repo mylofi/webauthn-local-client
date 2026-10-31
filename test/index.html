@@ -49,6 +49,22 @@ ul li { margin: 0.7rem; }
 
 <hr>
 
+<h2>ES256 Signature Parsing Tests:</h2>
+
+<p>
+	These run automatically on page load, no authenticator needed.
+	They cover the DER signature normalization in PR #21 (issue #15):
+	normal 32 + 32 bytes, short r (31 + 32), short s (32 + 31),
+	and a 33-byte DER integer with a leading 0x00 sign byte.
+	Each case must produce exactly 64 bytes (r || s).
+</p>
+
+<p id="es256-signature-tests-status"></p>
+
+<ul id="es256-signature-tests"></ul>
+
+<hr>
+
 <h2>Actions:</h2>
 
 <ul>
