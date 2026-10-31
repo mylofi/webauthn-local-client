@@ -169,9 +169,10 @@ function runES256SignatureTests() {
 			name: "4. DER sign-padding (33-byte encoded INTEGER)",
 			r: rPadded,
 			s: s32,
-			// @root/asn1 hands parseSignature the 33-byte value
-			// (leading 0x00 included); the result must drop it
-			// and still be exactly 32 bytes for r.
+			// The DER encoding is 33 bytes (leading 0x00 sign
+			// byte), but @root/asn1 already strips that byte
+			// before parseSignature() sees the value, so the
+			// result must be exactly those 32 bytes for r.
 			expected: concatBytes(bytesFrom(0x80,32),s32),
 		},
 	];
