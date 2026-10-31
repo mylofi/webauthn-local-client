@@ -110,6 +110,10 @@ export {
 	toUTF8String,
 	fromUTF8String,
 	resetAbortReason,
+
+	// signature parsing (exported for the test-bed in test/:
+	// it is an internal helper, not part of the main API)
+	parseSignature,
 };
 var publicAPI = {
 	// feature support tests
@@ -131,6 +135,10 @@ var publicAPI = {
 	toUTF8String,
 	fromUTF8String,
 	resetAbortReason,
+
+	// signature parsing (exported for the test-bed in test/:
+	// it is an internal helper, not part of the main API)
+	parseSignature,
 };
 export default publicAPI;
 
